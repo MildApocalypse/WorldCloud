@@ -1,16 +1,17 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { Word, Vec4, Direction, SideTests } from '../lib/types';
-import { toRadians } from '../utils/math'
+import { Vec4, Direction, SideTests } from '../../lib/types';
+import { Word } from '../../lib/classes';
+import { makeWord, checkBounds, testGrid } from './helpers'
+import { incrementAngle } from '@/app/lib/utils';
 import Vec2 from 'victor';
 
-let gridSizeX = 0;
-let gridSizeY = 0;
+const gridSize: Vec2 = new Vec2(0, 0);
 const sizes = 7;
 const cellSize = 13;
 
-const debug = true;
-const debuggrid = true;
+const debug = process.env.NEXT_PUBLIC_DEBUG === 'true';
+const stepDebug = process.env.NEXT_PUBLIC_STEPDEBUG === 'true';
 
 export default function CloudCanvas({ tokens }: { tokens: Map<string, number> }) {
 
@@ -42,19 +43,19 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             const xDiv = canvas.width / cellSize;
             const yDiv = canvas.height / cellSize;
 
-            gridSizeX = Math.trunc(xDiv);
-            gridSizeY = Math.trunc(yDiv);
+            gridSize.x = Math.trunc(xDiv);
+            gridSize.y = Math.trunc(yDiv);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const grid = Array.from({ length: gridSizeX }, () => Array(gridSizeY).fill(0));
+            const grid = Array.from({ length: gridSize.x }, () => Array(gridSize.y).fill(0));
             gridRef.current = grid;
 
             wordPool = [];
 
             const firstElem = wordList[0];
-            const firstWord = makeWord(firstElem[0], firstElem[1]);
+            const firstWord = makeWord(firstElem[0], firstElem[1], cellSize, new Vec2(gridSize.x, gridSize.y));
 
-            if(checkBounds(firstWord)){
+            if(checkBounds(firstWord, gridSize)){
                 wordPool.push(firstWord);
                 fillGrid(grid, firstWord);
             }
@@ -63,21 +64,20 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
                 return;
             }
             
-            if(!debuggrid){
+            if(!stepDebug){
                 let angle = 0;
                 wordList.slice(1).forEach(([key, value]) => {
 
-                    const word = makeWord(key, value);
-                    //word.location.add(new Vec2(Math.cos(angle), Math.sin(angle)));
+                    const word = makeWord(key, value, cellSize, gridSize) ;
                     
-                    if(!checkBounds(word)){ 
+                    if(!checkBounds(word, gridSize)){ 
                         console.log('word %s was out of bounds when created: (%d, %d)', [word.content, word.location.x, word.location.y]);
                         return;
                     }
                     if(addWord(word, grid, angle)){
                         wordPool.push(word);
                     }
-                    angle += toRadians(Math.random() * 10 + 10);
+                    angle = incrementAngle(angle);
                 });
             }
 
@@ -92,8 +92,8 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 console.log('res');
-                setSize({ width: canvas.width, height: canvas.height });
                 makeWordCloud();
+                setSize({ width: canvas.width, height: canvas.height });
             }, 100);
         });
         observer.observe(canvas);
@@ -107,10 +107,9 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             return;
         }
         const pair = wordList[indexRef.current]
-        const word = makeWord(pair[0], pair[1])
-        //word.location.add(new Vec2(Math.cos(angleRef.current), Math.sin(angleRef.current)))
+        const word = makeWord(pair[0], pair[1], cellSize, gridSize)
         let success = false;
-        if(!checkBounds(word)){ 
+        if(!checkBounds(word, gridSize)){ 
             console.log('word %s was out of bounds when created: (%d, %d)', [word.content, word.location.x, word.location.y]);
             return;
         }
@@ -118,14 +117,15 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             fillGrid(gridRef.current, word)
             indexRef.current += 1;
         }
-        angleRef.current += toRadians(Math.random()*10 + 10);
         if(success){
             updateAddedWords(prev => [...prev, word]);
             if(debug&&canvasRef.current&&gridRef.current){
                 drawGrid(canvasRef.current);
                 drawFilledCells(canvasRef.current, gridRef.current);
+                drawAngle(canvasRef.current, angleRef.current, addedWords[0].location);
             }
         }
+        angleRef.current = incrementAngle(angleRef.current);
     }
 
     return (
@@ -135,7 +135,7 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
                 className="w-full h-full"
             />
             <WordCloudHTML words={addedWords} width={size.width} height={size.height} />
-            {debuggrid && <button 
+            {stepDebug && <button 
             className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200"
             onClick={addOne}>
                 Add Word</button>}
@@ -144,12 +144,14 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
 }
 
 function WordCloudHTML({ words, width, height }: { words: Array<Word>, width: number, height: number }) {
-
-    const ratio: Vec2 = new Vec2(width / gridSizeX, height / gridSizeY);
+    const ratio: Vec2 = new Vec2(width / gridSize.x, height / gridSize.y);
 
     function convert(word: Word): Vec2 {
-        const x = word.location.x * ratio.x - word.size.x / 2;
-        const y = word.location.y * ratio.y + word.size.y / 2;
+        // (X/2)%1 adds 0.5 if word is odd number, needed in order to find true middle
+        const xEven = 1 - word.cellSize.x%2;
+        const yEven = 1 - word.cellSize.y%2;
+        const x = ((word.location.x + xEven + (word.cellSize.x/2)%1) * ratio.x) - (word.size.x / 2);
+        const y = ((word.location.y + yEven + (word.cellSize.y/2)%1) * ratio.y) + (word.size.y / 2);
         return new Vec2(x, y);
     }
     return (<>
@@ -166,16 +168,6 @@ function WordCloudHTML({ words, width, height }: { words: Array<Word>, width: nu
     </>)
 }
 
-function makeWord(key: string, value: number): Word{
-    const fontSize = (value*cellSize);
-    const wordSize = measureWord(key, fontSize.toString() + 'px Arial')
-    const cells = new Vec2(Math.ceil(wordSize.x/cellSize), Math.ceil(wordSize.y/cellSize))
-    const center = new Vec2(Math.floor(gridSizeX / 2) + 0.5, Math.floor(gridSizeY / 2) + 0.5)
-
-    const word: Word = {content: key, size: wordSize, cellSize: cells, frequencyCategory: value, location: center}
-    return word;
-}
-
 function addWord(word: Word, grid: Array<Array<number|Word>>, angle: number, canvas?: HTMLCanvasElement | null): boolean{
     let attempts = 0;
     let alternate = true;
@@ -184,7 +176,7 @@ function addWord(word: Word, grid: Array<Array<number|Word>>, angle: number, can
     while (attempts < 300) {
         const prev = moved;
         moved = moveWord(grid, word, angle, alternate);
-        if(!checkBounds(word)) break;
+        if(!checkBounds(word, gridSize)) break;
         if(canvas){
             drawGrid(canvas)
             drawFilledCells(canvas, grid);
@@ -233,22 +225,18 @@ function moveWord(grid: Array<Array<number | Word>>, word: Word, angle: number, 
         for (const entry of cols.tests) {
             const overlap = findOverlap(word, entry, direction)
             if(overlap){
-                const newVector = calculateMove(word, entry, overlap, direction)
-                //we will get two different results if the word is overlapping multiple boxes. we use the biggest one.
-                //its possible to overlap more than two other words, but this will be resolved on a later run.
+                const newVector = calculateMove(overlap, direction)
+                //we will get some different results if the word is overlapping multiple boxes. we use the biggest one
                 pushVector = pushVector.length() > newVector.length() ? pushVector : newVector;
             }
         }
     }
     else {
         const cols = checkCollision(word, (cardinal + 2) % 5, grid);
-        //we allow 'nudge' movement if there is a collision on the alternate sides of the word.
-        //if both sides are colliding, we dont move and continue in the given direction on the next run.
-        if (cols.oppositeVectors) return false;
         for (const entry of cols.tests) {
             const overlap = findOverlap(word, entry, direction);
             if(overlap){
-                const newVector = calculateMove(word, entry, overlap, direction);
+                const newVector = calculateMove(overlap, direction);
                 pushVector = pushVector.length() > newVector.length() ? pushVector : newVector;
             }
         }
@@ -256,7 +244,7 @@ function moveWord(grid: Array<Array<number | Word>>, word: Word, angle: number, 
     if (pushVector.isEqualTo(new Vec2(0, 0))) {
         return false
     }
-    word.location.add(new Vec2(Math.ceil(pushVector.x)*Math.sign(direction.x), Math.ceil(pushVector.y)*Math.sign(direction.y)));
+    word.move(new Vec2(Math.round(pushVector.x)*Math.sign(direction.x), Math.round(pushVector.y)*Math.sign(direction.y)));
     return true
 }
 
@@ -268,171 +256,81 @@ function moveWord(grid: Array<Array<number | Word>>, word: Word, angle: number, 
  * @returns a set of all hits and whether there are any hits on opposite sides of the word.
  */
 function checkCollision(word: Word, cardinal: Direction, grid: Array<Array<number | Word>>,): SideTests {
-    const xCells = word.cellSize.x;
-    const yCells = word.cellSize.y;
-
-    const p1 = new Vec2(Math.floor(word.location.x - xCells / 2), Math.ceil(word.location.y + yCells / 2))
-    const p2 = new Vec2(Math.ceil(word.location.x + xCells / 2), Math.ceil(word.location.y + yCells / 2))
-    const p3 = new Vec2(Math.floor(word.location.x - xCells / 2), Math.floor(word.location.y - yCells / 2))
-    const p4 = new Vec2(Math.ceil(word.location.x + xCells / 2), Math.floor(word.location.y - yCells / 2))
+    const p1 = new Vec2(word.xSpan[0], word.ySpan[1])
+    const p2 = new Vec2(word.xSpan[1], word.ySpan[1])
+    const p3 = new Vec2(word.xSpan[0], word.ySpan[0])
+    const p4 = new Vec2(word.xSpan[1], word.ySpan[0])
 
     let side1: Set<Word>;
     let side2: Set<Word>;
-    let opposite = false;
     if (cardinal < Direction.LEFT) {
-        side1 = testGrid(p1, p2, grid);
-        side2 = testGrid(p3, p4, grid);
+        side1 = testGrid(p1, p2, grid, gridSize);
+        side2 = testGrid(p3, p4, grid, gridSize);
     }
     else {
-        side1 = testGrid(p1, p3, grid);
-        side2 = testGrid(p2, p4, grid);
+        side1 = testGrid(p1, p3, grid, gridSize);
+        side2 = testGrid(p2, p4, grid, gridSize);
     }
 
     const collisions = side1.union(side2);
-    //if the union of both sides contains hits that are not present in the other side, we have opposing hits. 
-    // (if a word is fully overlapped by another word, both sides will detect the same word)
-    if (side1.size !== 0 && (collisions.difference(side1).size !== 0) || 
-    (side2.size !== 0 && collisions.difference(side2).size !== 0)) {
-        opposite = true;
-    }
 
-    return { tests: collisions, oppositeVectors: opposite }
-}
-
-function testGrid(p1: Vec2, p2: Vec2, grid: Array<Array<Word | number>>): Set<Word> {
-    const hits: Set<Word> = new Set<Word>();
-    const [xStart, xEnd] = p1.x < p2.x? [p1.x, p2.x] : [p2.x, p1.x];
-    const [yStart, yEnd] = p1.y < p2.y? [p1.y, p2.y] : [p2.y, p1.y];
-    for (let i = xStart; i <= xEnd; ++i) {
-        for (let j = yStart; j <= yEnd; ++j) {
-            const index = grid[i][gridSizeY - j];
-            if (typeof (index) != 'number') {
-                hits.add(index)
-            }
-        }
-    }
-    return hits;
+    return { tests: collisions }
 }
 
 /**
  * Find the minimum distance word needs to move in given direction to clear given overlap
- * @param word1 word to move
- * @param word2 word to being overlapped with
  * @param overlap amount of overlap with other word
  * @param direction given direction
  * @returns vector needed to move
  */
-function calculateMove(word1: Word, word2: Word, overlap: Vec4, direction: Vec2): Vec2 {
-    //overlap z and w values represent side of overlap, 0 = left/down 1 = up/right
-
-    //find the limit (minimum) of the distance needed to move in straight x and y dir to clear word being overlapped with
-    //if we are not on the same side as the given direction we must add double the side length of the word being moved
-    const xLim = (!!overlap.z === !!(Math.sign(direction.x) + 1)) ?
-        overlap.x : word2.cellSize.x - overlap.x + word1.cellSize.x;
-    const yLim = (!!overlap.w === !!(Math.sign(direction.y) + 1)) ?
-        overlap.y : word2.cellSize.y - overlap.y + word1.cellSize.y;
+function calculateMove(overlap: Vec4, direction: Vec2): Vec2 {
+    
+    const xLim = overlap.x;
+    const yLim = overlap.y;
 
     //calucluate what final movement vector would be if x or y value were set to xLim or yLim, respectively
     const xRes = Math.abs((yLim / direction.y) * direction.x);
     const yRes = Math.abs((xLim / direction.x) * direction.y);
 
     //if result value is greater than corresponding limit value, discard. we add pos/neg signs later so we can round up first
-    if (xRes <= xLim) return new Vec2(xRes, yLim);
-    if (yRes <= yLim) return new Vec2(xLim, yRes);
-    return new Vec2(0, 0)  //should never reach this line
-}
-// function calculateMove(word: Word, overlap: Vec4, direction: Vec2): Vec2 {
-//     //overlap z and w values represent side of overlap, 0 = left/down 1 = up/right
-
-//     //find the limit (minimum) of the distance needed to move in straight x and y dir to clear word being overlapped with
-//     //if we are not on the same side as the given direction we must add double the side length of the word being moved
-//     const xLim = (!!overlap.z === !!(Math.sign(direction.x) + 1)) ?
-//         overlap.x : 2 * word.cellSize.x - overlap.x;
-//     const yLim = (!!overlap.w === !!(Math.sign(direction.y) + 1)) ?
-//         overlap.y : 2 * word.cellSize.y - overlap.y;
-
-//     //calucluate what final movement vector would be if x or y value were set to xLim or yLim, respectively
-//     const xRes = Math.abs((yLim / direction.y) * direction.x);
-//     const yRes = Math.abs((xLim / direction.x) * direction.y);
-
-//     //if result value is greater than corresponding limit value, discard
-//     if (xRes <= xLim) return new Vec2(xRes, yLim);
-//     if (yRes <= yLim) return new Vec2(xLim, yRes); //TODO: return abs and convert sign in parent
-//     return new Vec2(0, 0)  //should never reach this line
-// }
-
-function fillGrid(grid: Array<Array<number | Word>>, word: Word) {
-    for (let i = 0; i < word.cellSize.x; ++i) {
-        for (let j = 0; j < word.cellSize.y; ++j) {
-            const x = Math.floor((word.location.x - word.cellSize.x / 2) + i);
-            const y = Math.floor((word.location.y - word.cellSize.y / 2) + j);
-            grid[x][gridSizeY - y] = word; //want 0,0 to be bottom left for ease of use
-        }
-    }
+    return (xRes <= xLim)? new Vec2(xRes, yLim) : new Vec2(xLim, yRes);
 }
 
 /**
  * Amount of overlap between word 1 with word 2
  * @param word1 word being moved
  * @param word2 word being overlapped with
+ * @param direction given direction word is being moved in
  * @returns amount of overlap (x, y) as well as which side the overlap is on(z, w) (0 = left/down, 1 = right/up)
  */
-// function findOverlap(word1: Word, word2: Word): Vec4 | null { //TODO rework overlap calculations
-//     const difference = word1.location.clone().subtract(word2.location)
-//     const x = word1.cellSize.x / 2 + word2.cellSize.x / 2 - Math.abs(difference.x)
-//     const y = word1.cellSize.y / 2 + word2.cellSize.y / 2 - Math.abs(difference.y)
-
-//     if (x > 0 && y > 0) {
-//         const overSidex = Math.max(0, Math.sign(difference.x))
-//         const overSidey = Math.max(0, Math.sign(difference.y))
-//         return { x: x, y: y, z: overSidex, w: overSidey }
-//     }
-//     return null;
-// }
-
 function findOverlap(word1: Word, word2: Word, direction: Vec2): Vec4 | null {
+    
     const difference = word1.location.clone().subtract(word2.location)
-    let x = word1.cellSize.x / 2 - word2.cellSize.x / 2 + difference.x
-    let y = word1.cellSize.y / 2 - word2.cellSize.y / 2 + difference.y
+    const x = Math.sign(direction.x) > 0 ? word2.xSpan[1] + 1 - word1.xSpan[0] : word1.xSpan[1] - (word2.xSpan[0] - 1);
+    const y = Math.sign(direction.y) > 0 ? word2.ySpan[1] + 1 - word1.ySpan[0] : word1.ySpan[1] - (word2.ySpan[0] - 1);
 
-    if (Math.abs(x) <=  word2.cellSize.x && Math.abs(y) <= word2.cellSize.y) {
-        x = word1.cellSize.x - x;
-        y = word1.cellSize.y - y;
-        
-        if(Math.sign(direction.x) < 0) x -= word1.cellSize.x + word2.cellSize.x;
-        if(Math.sign(direction.y) < 0) y -= word1.cellSize.y + word2.cellSize.y;
+    if (x > 0 && x < word1.cellSize.x + word2.cellSize.x && y > 0 && y < word1.cellSize.y + word2.cellSize.y) {
         
         const overSidex = Math.max(0, Math.sign(difference.x))
         const overSidey = Math.max(0, Math.sign(difference.y))
 
-        return { x: Math.abs(x), y: Math.abs(y), z: overSidex, w: overSidey }
+        return { x: x, y: y, z: overSidex, w: overSidey }
     }
     return null;
 }
 
-//get the pixel size of a text string given font size
-function measureWord(text: string, font: string): Vec2 {
-    const canvas = new OffscreenCanvas(0, 0);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return new Vec2(0, 0);
-    ctx.font = font;
-    const metrics = ctx.measureText(text);
-
-    return new Vec2(
-        metrics.width,
-        metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent, //.height gives actual height which depends on tall letters being used, we want full height.
-    );
-}
-
-function checkBounds(word: Word): boolean {
-    if((word.location.x + Math.ceil(word.cellSize.x/2)) >= gridSizeX || (word.location.x - Math.ceil(word.cellSize.x/2)) < 0
-    || (word.location.y + Math.ceil(word.cellSize.y/2)) >= gridSizeY || (word.location.y - Math.ceil(word.cellSize.y/2)) < 0){
-        return false;
+function fillGrid(grid: Array<Array<number | Word>>, word: Word) {
+    for (let i = 0; i < word.cellSize.x; ++i) {
+        for (let j = 0; j < word.cellSize.y; ++j) {
+            const x = word.xSpan[0] + i;
+            const y = word.ySpan[0] + j;
+            grid[x][gridSize.y - y - 1] = word; //want 0,0 to be bottom left for ease of use
+        }
     }
-    return true;
 }
 
-//debug grid to show cell locations
+/* ============== DEBUG DRAW FUNCTIONS ================ */
+
 function drawGrid(canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return
@@ -444,6 +342,7 @@ function drawGrid(canvas: HTMLCanvasElement) {
     const yStart = ((yDiv % 1) * cellSize) / 2;
 
     ctx.strokeStyle = 'red';
+    ctx.lineWidth = 1;
 
     let i = xStart;
     while (i < canvas.width) {
@@ -476,8 +375,8 @@ function drawFilledCells(canvas: HTMLCanvasElement, grid: Array<Array<Word | num
 
     ctx.fillStyle = 'steelblue';
 
-    for (let i = 0; i < gridSizeX; ++i) {
-        for (let j = 0; j < gridSizeY; ++j) {
+    for (let i = 0; i < gridSize.x; ++i) {
+        for (let j = 0; j < gridSize.y; ++j) {
             if (grid[i][j]) {
                 const x = xStart + i * cellSize;
                 const y = yStart + j * cellSize;
@@ -495,17 +394,38 @@ function drawCurrentSpace(canvas:HTMLCanvasElement, word:Word){
     const xDiv = canvas.width / cellSize;
     const yDiv = canvas.height / cellSize;
 
-    const xStart = (cellSize*Math.floor(word.location.x - word.cellSize.x/2)) + ((xDiv % 1) * cellSize) / 2;
-    const yStart = (cellSize*Math.floor(gridSizeY - word.location.y + word.cellSize.y/2)) + ((yDiv % 1) * cellSize) / 2;
+    const xStart = (cellSize*Math.floor(word.xSpan[0])) + ((xDiv % 1) * cellSize) / 2;
+    const yStart = canvas.height - (cellSize*Math.floor(word.ySpan[0] + 1)) - ((yDiv % 1) * cellSize) / 2;
 
     ctx.fillStyle = 'gold';
 
     for (let i = 0; i < word.cellSize.x; ++i) {
         for (let j = 0; j < word.cellSize.y; ++j) {
             const x = xStart + i * cellSize;
-            const y = yStart + j * cellSize;
+            const y = yStart - j * cellSize;
             ctx.fillRect(x, y, cellSize, cellSize);
         }
     }
+}
+
+function drawAngle(canvas: HTMLCanvasElement, angle: number, center: Vec2){
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return
+
+    const xDiv = canvas.width / cellSize;
+    const yDiv = canvas.height / cellSize;
+
+    const xStart = (cellSize*Math.floor(center.x + 1)) + ((xDiv % 1) * cellSize) / 2;
+    const yStart = canvas.height - (cellSize*Math.floor(center.y + 1)) - ((yDiv % 1) * cellSize) / 2;
+
+    const xEnd = xStart + Math.cos(angle) * 500;
+    const yEnd = yStart - Math.sin(angle) * 500;
+
+    ctx.strokeStyle = 'lightcoral';
+    ctx.lineWidth = 5;
+
+    ctx.moveTo(xStart, yStart);
+    ctx.lineTo(xEnd, yEnd);
+    ctx.stroke();
 }
 

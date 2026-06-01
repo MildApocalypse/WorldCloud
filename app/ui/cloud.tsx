@@ -1,5 +1,5 @@
 import { readPlaceholder, processText } from "../lib/data";
-import CloudCanvas from "./cloudCanvas";
+import CloudCanvas from "./cloudCanvas/cloudCanvas";
 import { WordFreq } from '../lib/types';
 
 export default async function WordCloud() {

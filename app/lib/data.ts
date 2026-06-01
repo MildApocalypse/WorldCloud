@@ -1,5 +1,4 @@
 import { readFile } from "fs/promises";
-import { Word } from "./types";
 export async function readPlaceholder(path: string): Promise <string>
 {
     try{

@@ -2,9 +2,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Vec4, Direction, SideTests } from '../../lib/types';
 import { Word } from '../../lib/classes';
-import { makeWord, checkBounds, testGrid } from './helpers'
 import { incrementAngle } from '@/app/lib/utils';
 import Vec2 from 'victor';
+import { useHelpers } from './helpers';
+
 
 const gridSize: Vec2 = new Vec2(0, 0);
 const sizes = 7;
@@ -25,14 +26,17 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
     const wordList: [string, number][] = [...sorted].map(([key, value]) => [key, Math.trunc(value / highest * sizes - 0.000000001 + 1)])
     
     const [addedWords, updateAddedWords] = useState<Word[]>([])
-    const [size, setSize] = useState({ width: 0, height: 0 });
+    const [size, setSize] = useState(new Vec2(0, 0));
 
+    const helpers = useHelpers(gridSize);
+    
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas || !tokens.size) return;
         const ctx = canvas.getContext('2d');
 
         let wordPool: Word[] = [];
+
 
         function makeWordCloud() {
             if (!canvas || !ctx) return;
@@ -53,7 +57,7 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             wordPool = [];
 
             const firstElem = wordList[0];
-            const firstWord = makeWord(firstElem[0], firstElem[1], cellSize, new Vec2(gridSize.x, gridSize.y));
+            const firstWord = helpers.makeWord(firstElem[0], firstElem[1], cellSize);
 
             if(checkBounds(firstWord, gridSize)){
                 wordPool.push(firstWord);
@@ -93,7 +97,7 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             resizeTimer = setTimeout(() => {
                 console.log('res');
                 makeWordCloud();
-                setSize({ width: canvas.width, height: canvas.height });
+                setSize(new Vec2(canvas.width, canvas.height));
             }, 100);
         });
         observer.observe(canvas);
@@ -188,7 +192,6 @@ function addWord(word: Word, grid: Array<Array<number|Word>>, angle: number, can
         }
         attempts++;
         alternate = !alternate;
-        if (attempts === 299) console.log('frodo');
     }
     return false
 }
@@ -294,29 +297,6 @@ function calculateMove(overlap: Vec4, direction: Vec2): Vec2 {
 
     //if result value is greater than corresponding limit value, discard. we add pos/neg signs later so we can round up first
     return (xRes <= xLim)? new Vec2(xRes, yLim) : new Vec2(xLim, yRes);
-}
-
-/**
- * Amount of overlap between word 1 with word 2
- * @param word1 word being moved
- * @param word2 word being overlapped with
- * @param direction given direction word is being moved in
- * @returns amount of overlap (x, y) as well as which side the overlap is on(z, w) (0 = left/down, 1 = right/up)
- */
-function findOverlap(word1: Word, word2: Word, direction: Vec2): Vec4 | null {
-    
-    const difference = word1.location.clone().subtract(word2.location)
-    const x = Math.sign(direction.x) > 0 ? word2.xSpan[1] + 1 - word1.xSpan[0] : word1.xSpan[1] - (word2.xSpan[0] - 1);
-    const y = Math.sign(direction.y) > 0 ? word2.ySpan[1] + 1 - word1.ySpan[0] : word1.ySpan[1] - (word2.ySpan[0] - 1);
-
-    if (x > 0 && x < word1.cellSize.x + word2.cellSize.x && y > 0 && y < word1.cellSize.y + word2.cellSize.y) {
-        
-        const overSidex = Math.max(0, Math.sign(difference.x))
-        const overSidey = Math.max(0, Math.sign(difference.y))
-
-        return { x: x, y: y, z: overSidex, w: overSidey }
-    }
-    return null;
 }
 
 function fillGrid(grid: Array<Array<number | Word>>, word: Word) {

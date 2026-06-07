@@ -3,14 +3,26 @@ import { Vec4, Direction, SideTests } from '@/app/lib/types';
 import Vec2 from 'victor'
 
 
-export function useHelpers(gridSize: Vec2) {
+export function useHelperHook() {
+    let gridSize = new Vec2(0, 0);
+    let elementSize = new Vec2(0, 0);
+    function setSize(size: Vec2, cellSize: number) {
+        elementSize = size;
+        findGridSize(cellSize);
+    }
+
+    function findGridSize(cellSize: number) {
+        const xDiv = elementSize.x / cellSize;
+        const yDiv = elementSize.y / cellSize;
+
+        gridSize = new Vec2(Math.trunc(xDiv), Math.trunc(yDiv));
+    }
     /**
      * iteratively moves words to find a place to put them in wordcloud.
      * @param grid the grid of cells representing the space words are occupying
      * @param word word to be added
      * @param angle the given direction the word is being moved in
      * @param alternate which side of the word is being checked for collisions
-     * @param moved whether the word was moved last time the function was run. passed as an object in order to pass by ref
      * @returns return the word if word was placed or null if not
      */
     function moveWord(grid: Array<Array<number | Word>>, word: Word, angle: number, alternate: boolean)
@@ -129,7 +141,6 @@ export function useHelpers(gridSize: Vec2) {
      * @param key the string content
      * @param value the frequency of the word that will derive its size
      * @param cellSize the cellsize of the grid that the word is being placed into
-     * @param gridSize the width and height of the grid in cells 
      * @returns the created word
      */
     function makeWord(key: string, value: number, cellSize: number): Word {
@@ -141,6 +152,7 @@ export function useHelpers(gridSize: Vec2) {
         const word: Word = new Word(key, wordSize, cells, value, center);
         return word;
     }
+
     /**
      * find the screen pixel size of a word's bounding box
      * @param text string content of the word
@@ -163,7 +175,6 @@ export function useHelpers(gridSize: Vec2) {
     /**
      * Check if a word is not ovelapping the edge of the grid
      * @param word the word to check
-     * @param size width and height in cells of the grid the word is being placed in
      * @returns word is within bounds of grid
      */
     function checkBounds(word: Word): boolean {
@@ -188,5 +199,17 @@ export function useHelpers(gridSize: Vec2) {
         }
         return hits;
     }
-    return { moveWord, checkBounds, makeWord, }
+    return {
+        moveWord,
+        checkCollision,
+        calculateMove,
+        findOverlap,
+        makeWord,
+        measureWord,
+        checkBounds,
+        testGrid,
+        gridSize,
+        elementSize,
+        setSize,
+    }
 }

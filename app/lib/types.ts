@@ -27,6 +27,7 @@ export type HookHelpers = {
     makeWord: (key: string, value: number, cellSize: number) => Word,
     measureWord: (text: string, font: string) => Vec2,
     checkBounds: (word: Word) => boolean,
-    testGrid: (p1: Vec2, p2: Vec2, grid: Array<Array<Word | number>>) => Set<Word>
+    testGrid: (p1: Vec2, p2: Vec2, grid: Array<Array<Word | number>>) => Set<Word>,
+    fillGrid: (grid: Array<Array<number | Word>>, word: Word) => void;
 };
 

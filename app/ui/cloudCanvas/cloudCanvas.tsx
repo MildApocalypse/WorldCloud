@@ -20,81 +20,104 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const angleRef = useRef<number>(0);
     const indexRef = useRef<number>(1);
-    const gridRef = useRef<Array<Array<Word|number>>>([[]])
+    const gridRef = useRef<Array<Array<Word | number>>>([[]])
 
     const sorted = [...tokens.entries()].sort((a, b) => (b[1] - a[1]))
     const highest = sorted[0][1];
     const wordList: [string, number][] = [...sorted].map(([key, value]) => [key, Math.trunc(value / highest * sizes - 0.000000001 + 1)])
-    
+
     const [addedWords, updateAddedWords] = useState<Word[]>([]);
-    const [size, setSize] = useState(new Vec2(0,0));
+    const [size, setSize] = useState(new Vec2(0, 0));
     const h = useHelperHook();
     h.setSize(size, cellSize);
     
-    useEffect(() => {
-        
+    function makeWordCloud() {
         const canvas = canvasRef.current;
         if (!canvas || !tokens.size) return;
         const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-        let wordPool: Word[] = [];
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
 
-        function makeWordCloud() {
-            if (!canvas || !ctx) return;
+        const xDiv = canvas.width / cellSize;
+        const yDiv = canvas.height / cellSize;
 
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+        gridSize.x = Math.trunc(xDiv);
+        gridSize.y = Math.trunc(yDiv);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const xDiv = canvas.width / cellSize;
-            const yDiv = canvas.height / cellSize;
+        canvasSize = new Vec2(canvas.width, canvas.height);
+        h.setSize(canvasSize, cellSize)
+        const grid = Array.from({ length: gridSize.x }, () => Array(gridSize.y).fill(0));
+        gridRef.current = grid;
 
-            gridSize.x = Math.trunc(xDiv);
-            gridSize.y = Math.trunc(yDiv);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const firstElem = wordList[0];
+        const firstWord = h.makeWord(firstElem[0], firstElem[1], cellSize);
+        const wordPool: Word[] = [];
 
-            const grid = Array.from({ length: gridSize.x }, () => Array(gridSize.y).fill(0));
-            gridRef.current = grid;
-            canvasSize = new Vec2(canvas.width, canvas.height);
-            h.setSize(canvasSize, cellSize)
-
-            wordPool = [];
-
-            const firstElem = wordList[0];
-            const firstWord = h.makeWord(firstElem[0], firstElem[1], cellSize);
-
-            if(h.checkBounds(firstWord)){
-                wordPool.push(firstWord);
-                fillGrid(grid, firstWord);
-            }
-            else{
-                console.log('could not add first word?') //todo: make proper error system
-                return;
-            }
-            
-            if(!stepDebug){
-                let angle = 0;
-                wordList.slice(1).forEach(([key, value]) => {
-
-                    const word = h.makeWord(key, value, cellSize) ;
-                    
-                    if(!h.checkBounds(word)){ 
-                        console.log('word %s was out of bounds when created: (%d, %d)', [word.content, word.location.x, word.location.y]);
-                        return;
-                    }
-                    if(addWord(word, grid, angle, h)){
-                        wordPool.push(word);
-                    }
-                    angle = incrementAngle(angle);
-                });
-            }
-
-            if(debug){
-                drawGrid(canvas);
-                drawFilledCells(canvas, grid);
-            }
-            updateAddedWords(wordPool);
+        if (h.checkBounds(firstWord)) {
+            wordPool.push(firstWord);
+            h.fillGrid(grid, firstWord);
+        }
+        else {
+            console.log('could not add first word?') //todo: make proper error system
+            return;
         }
 
+        if (!stepDebug) {
+            let angle = 0;
+            wordList.slice(1).forEach(([key, value]) => {
+
+                const word = h.makeWord(key, value, cellSize);
+
+                if (!h.checkBounds(word)) {
+                    console.log('word %s was out of bounds when created: (%d, %d)', [word.content, word.location.x, word.location.y]);
+                    return;
+                }
+                if (addWord(word, grid, angle, h)) {
+                    wordPool.push(word);
+                }
+                angle = incrementAngle(angle);
+            });
+        }
+
+        if (debug) {
+            drawGrid(canvas);
+            drawFilledCells(canvas, grid);
+        }
+        updateAddedWords(wordPool);
+    }
+
+    //used to add one word at a time for debug purposes
+    function addOne() {
+        if (gridRef.current.length === 0) {
+            console.log('grid is not initialized');
+            return;
+        }
+        const pair = wordList[indexRef.current]
+        const word = h.makeWord(pair[0], pair[1], cellSize)
+        if (!h.checkBounds(word)) {
+            console.log('word %s was out of bounds when created: (%d, %d)', [word.content, word.location.x, word.location.y]);
+            return;
+        }
+        if (addWord(word, gridRef.current, angleRef.current, h, canvasRef.current)) {
+            h.fillGrid(gridRef.current, word)
+            indexRef.current += 1;
+            updateAddedWords(prev => [...prev, word]);
+            if (debug && canvasRef.current && gridRef.current) {
+                drawGrid(canvasRef.current);
+                drawFilledCells(canvasRef.current, gridRef.current);
+                drawAngle(canvasRef.current, angleRef.current, addedWords[0].location);
+            }
+        }
+        angleRef.current = incrementAngle(angleRef.current);
+    }
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !tokens.size) return;
+        
         let resizeTimer = setTimeout(() => { return });
         const observer = new ResizeObserver(() => {
             clearTimeout(resizeTimer);
@@ -107,33 +130,8 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
         observer.observe(canvas);
 
         makeWordCloud();
-
         return () => observer.disconnect();
     }, [])
-
-    function addOne(){
-        if(gridRef.current.length === 0){
-            console.log('grid is not initialized');
-            return;
-        }
-        const pair = wordList[indexRef.current]
-        const word = h.makeWord(pair[0], pair[1], cellSize)
-        if(!h.checkBounds(word)){ 
-            console.log('word %s was out of bounds when created: (%d, %d)', [word.content, word.location.x, word.location.y]);
-            return;
-        }
-        if(addWord(word, gridRef.current, angleRef.current, h, canvasRef.current)){
-            fillGrid(gridRef.current, word)
-            indexRef.current += 1;
-            updateAddedWords(prev => [...prev, word]);
-            if(debug&&canvasRef.current&&gridRef.current){
-                drawGrid(canvasRef.current);
-                drawFilledCells(canvasRef.current, gridRef.current);
-                drawAngle(canvasRef.current, angleRef.current, addedWords[0].location);
-            }
-        }
-        angleRef.current = incrementAngle(angleRef.current);
-    }
 
     return (
         <div className="relative w-full h-screen">
@@ -142,9 +140,9 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
                 className="w-full h-full"
             />
             <WordCloudHTML words={addedWords} width={canvasSize.x} height={canvasSize.y} />
-            {stepDebug && <button 
-            className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200"
-            onClick={addOne}>
+            {stepDebug && <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200"
+                onClick={addOne}>
                 Add Word</button>}
         </div>
     )
@@ -176,7 +174,7 @@ function WordCloudHTML({ words, width, height }: { words: Array<Word>, width: nu
 }
 
 function addWord(word: Word, grid: Array<Array<number | Word>>, angle: number, h: HookHelpers,
-     canvas?: HTMLCanvasElement | null): boolean {
+    canvas?: HTMLCanvasElement | null): boolean {
     let attempts = 0;
     let alternate = true;
     let moved = true;
@@ -191,7 +189,7 @@ function addWord(word: Word, grid: Array<Array<number | Word>>, angle: number, h
             drawCurrentSpace(canvas, word);
         }
         if (!prev && !moved) {
-            fillGrid(grid, word);
+            h.fillGrid(grid, word);
             return true;
         }
         attempts++;
@@ -200,15 +198,7 @@ function addWord(word: Word, grid: Array<Array<number | Word>>, angle: number, h
     return false
 }
 
-function fillGrid(grid: Array<Array<number | Word>>, word: Word) {
-    for (let i = 0; i < word.cellSize.x; ++i) {
-        for (let j = 0; j < word.cellSize.y; ++j) {
-            const x = word.xSpan[0] + i;
-            const y = word.ySpan[0] + j;
-            grid[x][gridSize.y - y - 1] = word; //want 0,0 to be bottom left for ease of use
-        }
-    }
-}
+
 
 /* ============== DEBUG DRAW FUNCTIONS ================ */
 

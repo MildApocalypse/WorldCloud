@@ -199,6 +199,17 @@ export function useHelperHook() {
         }
         return hits;
     }
+
+    function fillGrid(grid: Array<Array<number | Word>>, word: Word) {
+        for (let i = 0; i < word.cellSize.x; ++i) {
+            for (let j = 0; j < word.cellSize.y; ++j) {
+                const x = word.xSpan[0] + i;
+                const y = word.ySpan[0] + j;
+                grid[x][gridSize.y - y - 1] = word; //want 0,0 to be bottom left for ease of use
+            }
+        }
+    }
+
     return {
         moveWord,
         checkCollision,
@@ -208,6 +219,7 @@ export function useHelperHook() {
         measureWord,
         checkBounds,
         testGrid,
+        fillGrid,
         gridSize,
         elementSize,
         setSize,

@@ -1,10 +1,9 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
-import { HookHelpers } from '../../lib/types';
+import { useEffect, useRef, useState, RefObject} from 'react'
 import { Word } from '../../lib/classes';
 import { incrementAngle } from '@/app/lib/utils';
 import Vec2 from 'victor';
-import { useHelperHook } from './helpers';
+import { Helpers } from './helpers';
 
 
 const gridSize: Vec2 = new Vec2(0, 0);
@@ -17,39 +16,38 @@ const stepDebug = process.env.NEXT_PUBLIC_STEPDEBUG === 'true';
 
 export default function CloudCanvas({ tokens }: { tokens: Map<string, number> }) {
 
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const angleRef = useRef<number>(0);
-    const indexRef = useRef<number>(1);
-    const gridRef = useRef<Array<Array<Word | number>>>([[]])
+    const canvasRef     = useRef<HTMLCanvasElement>(null);
+    const angleRef      = useRef<number>(0);
+    const indexRef      = useRef<number>(1);
+    const gridRef       = useRef<Array<Array<Word | number>>>([[]])
+    const addedWordsRef = useRef<Array<Word>>([]);
+
+    const [addedWords, updateAddedWords]    = useState<Word[]>([]);
+    const [size, setSize]                   = useState(new Vec2(0, 0));
+    
+    const h = new Helpers();
+    h.setSizes(size, cellSize);
 
     const sorted = [...tokens.entries()].sort((a, b) => (b[1] - a[1]))
     const highest = sorted[0][1];
     const wordList: [string, number][] = [...sorted].map(([key, value]) => [key, Math.trunc(value / highest * sizes - 0.000000001 + 1)])
 
-    const [addedWords, updateAddedWords] = useState<Word[]>([]);
-    const [size, setSize] = useState(new Vec2(0, 0));
-    const h = useHelperHook();
-    h.setSize(size, cellSize);
-    
-    function makeWordCloud() {
+    function makeWordCloud(): Word[] {
         const canvas = canvasRef.current;
-        if (!canvas || !tokens.size) return;
+        if (!canvas || !tokens.size) return [];
         const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        if (!ctx) return [];
 
         canvas.width = canvas.offsetWidth;
         canvas.height = canvas.offsetHeight;
 
-        const xDiv = canvas.width / cellSize;
-        const yDiv = canvas.height / cellSize;
-
-        gridSize.x = Math.trunc(xDiv);
-        gridSize.y = Math.trunc(yDiv);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         canvasSize = new Vec2(canvas.width, canvas.height);
-        h.setSize(canvasSize, cellSize)
-        const grid = Array.from({ length: gridSize.x }, () => Array(gridSize.y).fill(0));
+        h.setSizes(new Vec2(canvas.width, canvas.height), cellSize)
+        gridSize.x = h.gridSize.x;
+        gridSize.y = h.gridSize.y;
+        const grid = Array.from({ length: h.gridSize.x }, () => Array(h.gridSize.y).fill(0));
         gridRef.current = grid;
 
         const firstElem = wordList[0];
@@ -62,7 +60,7 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
         }
         else {
             console.log('could not add first word?') //todo: make proper error system
-            return;
+            return [];
         }
 
         if (!stepDebug) {
@@ -86,7 +84,7 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             drawGrid(canvas);
             drawFilledCells(canvas, grid);
         }
-        updateAddedWords(wordPool);
+        return wordPool;
     }
 
     //used to add one word at a time for debug purposes
@@ -113,7 +111,7 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
         }
         angleRef.current = incrementAngle(angleRef.current);
     }
-
+    
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas || !tokens.size) return;
@@ -123,13 +121,12 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 console.log('res');
-                makeWordCloud();
+                addedWordsRef.current = makeWordCloud();
                 setSize(canvasSize);
             }, 100);
         });
         observer.observe(canvas);
 
-        makeWordCloud();
         return () => observer.disconnect();
     }, [])
 
@@ -139,7 +136,7 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
                 ref={canvasRef}
                 className="w-full h-full"
             />
-            <WordCloudHTML words={addedWords} width={canvasSize.x} height={canvasSize.y} />
+            <WordCloudHTML words={addedWordsRef} width={canvasSize.x} height={canvasSize.y} h={h} />
             {stepDebug && <button
                 className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200"
                 onClick={addOne}>
@@ -148,8 +145,8 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
     )
 }
 
-function WordCloudHTML({ words, width, height }: { words: Array<Word>, width: number, height: number }) {
-    const ratio: Vec2 = new Vec2(width / gridSize.x, height / gridSize.y);
+function WordCloudHTML({ words, width, height, h}: { words: RefObject<Word[]>, width: number, height: number, h: Helpers }) {
+    const ratio: Vec2 = new Vec2(width / h.gridSize.x, height / h.gridSize.y);
 
     function convert(word: Word): Vec2 {
         // (X/2)%1 adds 0.5 if word is odd number, needed in order to find true middle
@@ -160,7 +157,7 @@ function WordCloudHTML({ words, width, height }: { words: Array<Word>, width: nu
         return new Vec2(x, y);
     }
     return (<>
-        {words.map((word) => {
+        {words.current.map((word) => {
             const position = convert(word);
             return (<p key={word.content} style={{
                 position: 'absolute', left: position.x, top: height - position.y,
@@ -173,7 +170,7 @@ function WordCloudHTML({ words, width, height }: { words: Array<Word>, width: nu
     </>)
 }
 
-function addWord(word: Word, grid: Array<Array<number | Word>>, angle: number, h: HookHelpers,
+function addWord(word: Word, grid: Array<Array<number | Word>>, angle: number, h: Helpers,
     canvas?: HTMLCanvasElement | null): boolean {
     let attempts = 0;
     let alternate = true;

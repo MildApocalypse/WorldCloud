@@ -3,19 +3,25 @@ import { Vec4, Direction, SideTests } from '@/app/lib/types';
 import Vec2 from 'victor'
 
 
-export function useHelperHook() {
-    let gridSize = new Vec2(0, 0);
-    let elementSize = new Vec2(0, 0);
-    function setSize(size: Vec2, cellSize: number) {
-        elementSize = size;
-        findGridSize(cellSize);
+export class Helpers {
+    gridSize: Vec2;
+    elementSize: Vec2;
+
+    constructor() {
+        this.gridSize = new Vec2(0, 0);
+        this.elementSize = new Vec2(0, 0);
     }
 
-    function findGridSize(cellSize: number) {
-        const xDiv = elementSize.x / cellSize;
-        const yDiv = elementSize.y / cellSize;
+    setSizes(size: Vec2, cellSize: number) {
+        this.elementSize = size;
+        this.findGridSize(cellSize);
+    }
 
-        gridSize = new Vec2(Math.trunc(xDiv), Math.trunc(yDiv));
+    findGridSize(cellSize: number) {
+        const xDiv = this.elementSize.x / cellSize;
+        const yDiv = this.elementSize.y / cellSize;
+
+        this.gridSize = new Vec2(Math.trunc(xDiv), Math.trunc(yDiv));
     }
     /**
      * iteratively moves words to find a place to put them in wordcloud.
@@ -25,7 +31,7 @@ export function useHelperHook() {
      * @param alternate which side of the word is being checked for collisions
      * @returns return the word if word was placed or null if not
      */
-    function moveWord(grid: Array<Array<number | Word>>, word: Word, angle: number, alternate: boolean)
+    moveWord(grid: Array<Array<number | Word>>, word: Word, angle: number, alternate: boolean)
         : boolean {
         //get rough direction of angle: up, down, left or right
         const direction = new Vec2(Math.cos(angle), Math.sin(angle));
@@ -44,22 +50,22 @@ export function useHelperHook() {
         //we test the side equal and opposite the direction, e.g. up and down. if false, check the other two sides.
         let pushVector = new Vec2(0, 0); //the final vector that the word is moved by
         if (alternate) {
-            const cols = checkCollision(word, cardinal, grid);
+            const cols = this.checkCollision(word, cardinal, grid);
             for (const entry of cols.tests) {
-                const overlap = findOverlap(word, entry, direction)
+                const overlap = this.findOverlap(word, entry, direction)
                 if (overlap) {
-                    const newVector = calculateMove(overlap, direction)
+                    const newVector = this.calculateMove(overlap, direction)
                     //we will get some different results if the word is overlapping multiple boxes. we use the biggest one
                     pushVector = pushVector.length() > newVector.length() ? pushVector : newVector;
                 }
             }
         }
         else {
-            const cols = checkCollision(word, (cardinal + 2) % 5, grid);
+            const cols = this.checkCollision(word, (cardinal + 2) % 5, grid);
             for (const entry of cols.tests) {
-                const overlap = findOverlap(word, entry, direction);
+                const overlap = this.findOverlap(word, entry, direction);
                 if (overlap) {
-                    const newVector = calculateMove(overlap, direction);
+                    const newVector = this.calculateMove(overlap, direction);
                     pushVector = pushVector.length() > newVector.length() ? pushVector : newVector;
                 }
             }
@@ -78,7 +84,7 @@ export function useHelperHook() {
      * @param grid the grid of cells containing all words added so far
      * @returns a set of all hits and whether there are any hits on opposite sides of the word.
      */
-    function checkCollision(word: Word, cardinal: Direction, grid: Array<Array<number | Word>>): SideTests {
+    checkCollision(word: Word, cardinal: Direction, grid: Array<Array<number | Word>>): SideTests {
         const p1 = new Vec2(word.xSpan[0], word.ySpan[1])
         const p2 = new Vec2(word.xSpan[1], word.ySpan[1])
         const p3 = new Vec2(word.xSpan[0], word.ySpan[0])
@@ -87,12 +93,12 @@ export function useHelperHook() {
         let side1: Set<Word>;
         let side2: Set<Word>;
         if (cardinal < Direction.LEFT) {
-            side1 = testGrid(p1, p2, grid);
-            side2 = testGrid(p3, p4, grid);
+            side1 = this.testGrid(p1, p2, grid);
+            side2 = this.testGrid(p3, p4, grid);
         }
         else {
-            side1 = testGrid(p1, p3, grid);
-            side2 = testGrid(p2, p4, grid);
+            side1 = this.testGrid(p1, p3, grid);
+            side2 = this.testGrid(p2, p4, grid);
         }
 
         const collisions = side1.union(side2);
@@ -100,7 +106,7 @@ export function useHelperHook() {
         return { tests: collisions }
     }
 
-    function calculateMove(overlap: Vec4, direction: Vec2): Vec2 {
+    calculateMove(overlap: Vec4, direction: Vec2): Vec2 {
 
         const xLim = overlap.x;
         const yLim = overlap.y;
@@ -120,7 +126,7 @@ export function useHelperHook() {
      * @param direction given direction word is being moved in
      * @returns amount of overlap (x, y) as well as which side the overlap is on(z, w) (0 = left/down, 1 = right/up)
      */
-    function findOverlap(word1: Word, word2: Word, direction: Vec2): Vec4 | null {
+    findOverlap(word1: Word, word2: Word, direction: Vec2): Vec4 | null {
 
         const difference = word1.location.clone().subtract(word2.location)
         const x = Math.sign(direction.x) > 0 ? word2.xSpan[1] + 1 - word1.xSpan[0] : word1.xSpan[1] - (word2.xSpan[0] - 1);
@@ -143,11 +149,11 @@ export function useHelperHook() {
      * @param cellSize the cellsize of the grid that the word is being placed into
      * @returns the created word
      */
-    function makeWord(key: string, value: number, cellSize: number): Word {
+    makeWord(key: string, value: number, cellSize: number): Word {
         const fontSize = (value * cellSize);
-        const wordSize = measureWord(key, fontSize.toString() + 'px Arial')
+        const wordSize = this.measureWord(key, fontSize.toString() + 'px Arial')
         const cells = new Vec2(Math.ceil(wordSize.x / cellSize), Math.ceil(wordSize.y / cellSize))
-        const center = new Vec2(Math.floor(gridSize.x / 2) - gridSize.x % 2, Math.floor(gridSize.y / 2) - gridSize.y % 2)
+        const center = new Vec2(Math.floor(this.gridSize.x / 2) - this.gridSize.x % 2, Math.floor(this.gridSize.y / 2) - this.gridSize.y % 2)
 
         const word: Word = new Word(key, wordSize, cells, value, center);
         return word;
@@ -159,7 +165,7 @@ export function useHelperHook() {
      * @param font the font with px value the word will be written in
      * @returns 
      */
-    function measureWord(text: string, font: string): Vec2 {
+    measureWord(text: string, font: string): Vec2 {
         const canvas = new OffscreenCanvas(0, 0);
         const ctx = canvas.getContext('2d');
         if (!ctx) return new Vec2(0, 0);
@@ -177,21 +183,21 @@ export function useHelperHook() {
      * @param word the word to check
      * @returns word is within bounds of grid
      */
-    function checkBounds(word: Word): boolean {
-        if (word.xSpan[1] >= gridSize.x || word.xSpan[0] < 0
-            || word.ySpan[1] >= gridSize.y || word.ySpan[0] < 0) {
+    checkBounds(word: Word): boolean {
+        if (word.xSpan[1] >= this.gridSize.x || word.xSpan[0] < 0
+            || word.ySpan[1] >= this.gridSize.y || word.ySpan[0] < 0) {
             return false;
         }
         return true;
     }
 
-    function testGrid(p1: Vec2, p2: Vec2, grid: Array<Array<Word | number>>): Set<Word> {
+    testGrid(p1: Vec2, p2: Vec2, grid: Array<Array<Word | number>>): Set<Word> {
         const hits: Set<Word> = new Set<Word>();
         const [xStart, xEnd] = p1.x < p2.x ? [p1.x, p2.x] : [p2.x, p1.x];
         const [yStart, yEnd] = p1.y < p2.y ? [p1.y, p2.y] : [p2.y, p1.y];
         for (let i = xStart; i <= xEnd; ++i) {
             for (let j = yStart; j <= yEnd; ++j) {
-                const index = grid[i][gridSize.y - 1 - j];
+                const index = grid[i][this.gridSize.y - 1 - j];
                 if (typeof (index) != 'number') {
                     hits.add(index)
                 }
@@ -200,28 +206,13 @@ export function useHelperHook() {
         return hits;
     }
 
-    function fillGrid(grid: Array<Array<number | Word>>, word: Word) {
+    fillGrid(grid: Array<Array<number | Word>>, word: Word) {
         for (let i = 0; i < word.cellSize.x; ++i) {
             for (let j = 0; j < word.cellSize.y; ++j) {
                 const x = word.xSpan[0] + i;
                 const y = word.ySpan[0] + j;
-                grid[x][gridSize.y - y - 1] = word; //want 0,0 to be bottom left for ease of use
+                grid[x][this.gridSize.y - y - 1] = word; //want 0,0 to be bottom left for ease of use
             }
         }
-    }
-
-    return {
-        moveWord,
-        checkCollision,
-        calculateMove,
-        findOverlap,
-        makeWord,
-        measureWord,
-        checkBounds,
-        testGrid,
-        fillGrid,
-        gridSize,
-        elementSize,
-        setSize,
     }
 }

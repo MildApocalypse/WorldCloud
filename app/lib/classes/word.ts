@@ -1,5 +1,5 @@
 import Vec2 from 'victor'
-import { getRange } from './utils'
+import { getRange } from '../utils'
 
 export class Word{
     content: string

@@ -1,4 +1,4 @@
-import { Word } from '@/app/lib/classes';
+import { Word } from '@/app/lib/classes/word';
 import { Vec4, Direction, SideTests } from '@/app/lib/types';
 import Vec2 from 'victor'
 
@@ -6,20 +6,23 @@ import Vec2 from 'victor'
 export class Helpers {
     gridSize: Vec2;
     elementSize: Vec2;
+    cellSize: number
 
     constructor() {
         this.gridSize = new Vec2(0, 0);
         this.elementSize = new Vec2(0, 0);
+        this.cellSize = 0;
     }
 
     setSizes(size: Vec2, cellSize: number) {
         this.elementSize = size;
-        this.findGridSize(cellSize);
+        this.cellSize = cellSize;
+        this.findGridSize();
     }
 
-    findGridSize(cellSize: number) {
-        const xDiv = this.elementSize.x / cellSize;
-        const yDiv = this.elementSize.y / cellSize;
+    findGridSize() {
+        const xDiv = this.elementSize.x / this.cellSize;
+        const yDiv = this.elementSize.y / this.cellSize;
 
         this.gridSize = new Vec2(Math.trunc(xDiv), Math.trunc(yDiv));
     }
@@ -146,13 +149,12 @@ export class Helpers {
      * Calculates initial values for word constructor
      * @param key the string content
      * @param value the frequency of the word that will derive its size
-     * @param cellSize the cellsize of the grid that the word is being placed into
      * @returns the created word
      */
-    makeWord(key: string, value: number, cellSize: number): Word {
-        const fontSize = (value * cellSize);
+    makeWord(key: string, value: number): Word {
+        const fontSize = (value * this.cellSize);
         const wordSize = this.measureWord(key, fontSize.toString() + 'px Arial')
-        const cells = new Vec2(Math.ceil(wordSize.x / cellSize), Math.ceil(wordSize.y / cellSize))
+        const cells = new Vec2(Math.ceil(wordSize.x / this.cellSize), Math.ceil(wordSize.y / this.cellSize))
         const center = new Vec2(Math.floor(this.gridSize.x / 2) - this.gridSize.x % 2, Math.floor(this.gridSize.y / 2) - this.gridSize.y % 2)
 
         const word: Word = new Word(key, wordSize, cells, value, center);

@@ -1,36 +1,39 @@
 'use client'
-import { useEffect, useRef, useState, RefObject} from 'react'
-import { Word } from '../../lib/classes';
+import { useEffect, useRef, useState} from 'react'
+import { Word } from '../lib/classes/word';
 import { incrementAngle } from '@/app/lib/utils';
 import Vec2 from 'victor';
-import { Helpers } from './helpers';
+import { Helpers } from '../lib/classes/helpers';
+import { DebugHelpers } from '../lib/classes/debugHelpers';
 
-
-const gridSize: Vec2 = new Vec2(0, 0);
-let canvasSize: Vec2 = new Vec2(0, 0);
-const sizes = 7;
-const cellSize = 13;
+const sizeCategories = 7;   //the divisions of size for each word
+const cellSize = 13;        //the pixel size of each cell in the grid
 
 const debug = process.env.NEXT_PUBLIC_DEBUG === 'true';
 const stepDebug = process.env.NEXT_PUBLIC_STEPDEBUG === 'true';
 
 export default function CloudCanvas({ tokens }: { tokens: Map<string, number> }) {
 
+    //refs needed between renders for step-by-step debugging
     const canvasRef     = useRef<HTMLCanvasElement>(null);
     const angleRef      = useRef<number>(0);
     const indexRef      = useRef<number>(1);
     const gridRef       = useRef<Array<Array<Word | number>>>([[]])
     const addedWordsRef = useRef<Array<Word>>([]);
 
+    //added words is mainly needed for the step-by-step debugger to trigger a rerender when a new word is added, 
+    //but is also used by the production code for convenience
     const [addedWords, updateAddedWords]    = useState<Word[]>([]);
     const [size, setSize]                   = useState(new Vec2(0, 0));
     
     const h = new Helpers();
     h.setSizes(size, cellSize);
+    const dh = new DebugHelpers();
+    dh.setSizes(cellSize, h.gridSize);
 
-    const sorted = [...tokens.entries()].sort((a, b) => (b[1] - a[1]))
+    const sorted = [...tokens.entries()].sort((a, b) => (b[1] - a[1]));
     const highest = sorted[0][1];
-    const wordList: [string, number][] = [...sorted].map(([key, value]) => [key, Math.trunc(value / highest * sizes - 0.000000001 + 1)])
+    const wordList: [string, number][] = [...sorted].map(([key, value]) => [key, Math.trunc(value / highest * sizeCategories - 0.000000001 + 1)]);
 
     function makeWordCloud(): Word[] {
         const canvas = canvasRef.current;
@@ -43,15 +46,14 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        canvasSize = new Vec2(canvas.width, canvas.height);
-        h.setSizes(new Vec2(canvas.width, canvas.height), cellSize)
-        gridSize.x = h.gridSize.x;
-        gridSize.y = h.gridSize.y;
+        h.setSizes(new Vec2(canvas.width, canvas.height), cellSize);
+        dh.setSizes(cellSize, h.gridSize);
+
         const grid = Array.from({ length: h.gridSize.x }, () => Array(h.gridSize.y).fill(0));
         gridRef.current = grid;
 
         const firstElem = wordList[0];
-        const firstWord = h.makeWord(firstElem[0], firstElem[1], cellSize);
+        const firstWord = h.makeWord(firstElem[0], firstElem[1]);
         const wordPool: Word[] = [];
 
         if (h.checkBounds(firstWord)) {
@@ -67,13 +69,13 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             let angle = 0;
             wordList.slice(1).forEach(([key, value]) => {
 
-                const word = h.makeWord(key, value, cellSize);
+                const word = h.makeWord(key, value);
 
                 if (!h.checkBounds(word)) {
                     console.log('word %s was out of bounds when created: (%d, %d)', [word.content, word.location.x, word.location.y]);
                     return;
                 }
-                if (addWord(word, grid, angle, h)) {
+                if (addWord(word, grid, angle, h, dh)) {
                     wordPool.push(word);
                 }
                 angle = incrementAngle(angle);
@@ -81,8 +83,8 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
         }
 
         if (debug) {
-            drawGrid(canvas);
-            drawFilledCells(canvas, grid);
+            dh.drawGrid(canvas);
+            dh.drawFilledCells(canvas, grid);
         }
         return wordPool;
     }
@@ -94,19 +96,19 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             return;
         }
         const pair = wordList[indexRef.current]
-        const word = h.makeWord(pair[0], pair[1], cellSize)
+        const word = h.makeWord(pair[0], pair[1])
         if (!h.checkBounds(word)) {
             console.log('word %s was out of bounds when created: (%d, %d)', [word.content, word.location.x, word.location.y]);
             return;
         }
-        if (addWord(word, gridRef.current, angleRef.current, h, canvasRef.current)) {
+        if (addWord(word, gridRef.current, angleRef.current, h, dh, canvasRef.current)) {
             h.fillGrid(gridRef.current, word)
             indexRef.current += 1;
             updateAddedWords(prev => [...prev, word]);
             if (debug && canvasRef.current && gridRef.current) {
-                drawGrid(canvasRef.current);
-                drawFilledCells(canvasRef.current, gridRef.current);
-                drawAngle(canvasRef.current, angleRef.current, addedWords[0].location);
+                dh.drawGrid(canvasRef.current);
+                dh.drawFilledCells(canvasRef.current, gridRef.current);
+                dh.drawAngle(canvasRef.current, angleRef.current, addedWords[0].location);
             }
         }
         angleRef.current = incrementAngle(angleRef.current);
@@ -122,7 +124,8 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             resizeTimer = setTimeout(() => {
                 console.log('res');
                 addedWordsRef.current = makeWordCloud();
-                setSize(canvasSize);
+                setSize(h.elementSize);
+                updateAddedWords(addedWordsRef.current)
             }, 100);
         });
         observer.observe(canvas);
@@ -136,7 +139,7 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
                 ref={canvasRef}
                 className="w-full h-full"
             />
-            <WordCloudHTML words={addedWordsRef} width={canvasSize.x} height={canvasSize.y} h={h} />
+            <WordCloudHTML words={addedWords} width={h.elementSize.x} height={h.elementSize.y} h={h} />
             {stepDebug && <button
                 className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200"
                 onClick={addOne}>
@@ -145,7 +148,7 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
     )
 }
 
-function WordCloudHTML({ words, width, height, h}: { words: RefObject<Word[]>, width: number, height: number, h: Helpers }) {
+function WordCloudHTML({ words, width, height, h}: { words: Word[], width: number, height: number, h: Helpers }) {
     const ratio: Vec2 = new Vec2(width / h.gridSize.x, height / h.gridSize.y);
 
     function convert(word: Word): Vec2 {
@@ -157,7 +160,7 @@ function WordCloudHTML({ words, width, height, h}: { words: RefObject<Word[]>, w
         return new Vec2(x, y);
     }
     return (<>
-        {words.current.map((word) => {
+        {words.map((word) => {
             const position = convert(word);
             return (<p key={word.content} style={{
                 position: 'absolute', left: position.x, top: height - position.y,
@@ -170,7 +173,7 @@ function WordCloudHTML({ words, width, height, h}: { words: RefObject<Word[]>, w
     </>)
 }
 
-function addWord(word: Word, grid: Array<Array<number | Word>>, angle: number, h: Helpers,
+function addWord(word: Word, grid: Array<Array<number | Word>>, angle: number, h: Helpers, dh: DebugHelpers,
     canvas?: HTMLCanvasElement | null): boolean {
     let attempts = 0;
     let alternate = true;
@@ -181,9 +184,9 @@ function addWord(word: Word, grid: Array<Array<number | Word>>, angle: number, h
         moved = h.moveWord(grid, word, angle, alternate);
         if (!h.checkBounds(word)) break;
         if (canvas) {
-            drawGrid(canvas)
-            drawFilledCells(canvas, grid);
-            drawCurrentSpace(canvas, word);
+            dh.drawGrid(canvas)
+            dh.drawFilledCells(canvas, grid);
+            dh.drawCurrentSpace(canvas, word);
         }
         if (!prev && !moved) {
             h.fillGrid(grid, word);
@@ -194,108 +197,3 @@ function addWord(word: Word, grid: Array<Array<number | Word>>, angle: number, h
     }
     return false
 }
-
-
-
-/* ============== DEBUG DRAW FUNCTIONS ================ */
-
-function drawGrid(canvas: HTMLCanvasElement) {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return
-
-    const xDiv = canvas.width / cellSize;
-    const yDiv = canvas.height / cellSize;
-
-    const xStart = ((xDiv % 1) * cellSize) / 2;
-    const yStart = ((yDiv % 1) * cellSize) / 2;
-
-    ctx.strokeStyle = 'red';
-    ctx.lineWidth = 1;
-
-    let i = xStart;
-    while (i < canvas.width) {
-        ctx.beginPath()
-        ctx.moveTo(i, 0)
-        ctx.lineTo(i, canvas.height)
-        ctx.stroke();
-        i += cellSize;
-    }
-
-    let j = yStart;
-    while (j < canvas.height) {
-        ctx.beginPath()
-        ctx.moveTo(0, j)
-        ctx.lineTo(canvas.width, j)
-        ctx.stroke();
-        j += cellSize;
-    }
-}
-
-function drawFilledCells(canvas: HTMLCanvasElement, grid: Array<Array<Word | number>>) {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return
-
-    const xDiv = canvas.width / cellSize;
-    const yDiv = canvas.height / cellSize;
-
-    const xStart = ((xDiv % 1) * cellSize) / 2;
-    const yStart = ((yDiv % 1) * cellSize) / 2;
-
-    ctx.fillStyle = 'steelblue';
-
-    for (let i = 0; i < gridSize.x; ++i) {
-        for (let j = 0; j < gridSize.y; ++j) {
-            if (grid[i][j]) {
-                const x = xStart + i * cellSize;
-                const y = yStart + j * cellSize;
-                ctx.fillRect(x, y, cellSize, cellSize);
-            }
-        }
-    }
-
-}
-
-function drawCurrentSpace(canvas: HTMLCanvasElement, word: Word) {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return
-
-    const xDiv = canvas.width / cellSize;
-    const yDiv = canvas.height / cellSize;
-
-    const xStart = (cellSize * Math.floor(word.xSpan[0])) + ((xDiv % 1) * cellSize) / 2;
-    const yStart = canvas.height - (cellSize * Math.floor(word.ySpan[0] + 1)) - ((yDiv % 1) * cellSize) / 2;
-
-    ctx.fillStyle = 'gold';
-
-    for (let i = 0; i < word.cellSize.x; ++i) {
-        for (let j = 0; j < word.cellSize.y; ++j) {
-            const x = xStart + i * cellSize;
-            const y = yStart - j * cellSize;
-            ctx.fillRect(x, y, cellSize, cellSize);
-        }
-    }
-}
-
-function drawAngle(canvas: HTMLCanvasElement, angle: number, center: Vec2) {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return
-
-    const xDiv = canvas.width / cellSize;
-    const yDiv = canvas.height / cellSize;
-
-    const xStart = (cellSize * Math.floor(center.x + 1)) + ((xDiv % 1) * cellSize) / 2;
-    const yStart = canvas.height - (cellSize * Math.floor(center.y + 1)) - ((yDiv % 1) * cellSize) / 2;
-
-    const xEnd = xStart + Math.cos(angle) * 500;
-    const yEnd = yStart - Math.sin(angle) * 500;
-
-    ctx.strokeStyle = 'lightcoral';
-    ctx.lineWidth = 5;
-
-    ctx.moveTo(xStart, yStart);
-    ctx.lineTo(xEnd, yEnd);
-    ctx.stroke();
-}
-
-
-

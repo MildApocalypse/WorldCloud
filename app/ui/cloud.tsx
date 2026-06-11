@@ -1,4 +1,4 @@
-import CloudCanvas from "./cloudCanvas/cloudCanvas";
+import CloudCanvas from "./cloudCanvas";
 import { processText, readPlaceholder } from "../lib/data";
 
 export default async function WordCloud() {

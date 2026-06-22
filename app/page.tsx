@@ -1,13 +1,12 @@
-import { SS4 } from "./ui/fonts";
 import WordCloud from "./ui/cloud";
-
+import { ErrorBoundary } from "next/dist/client/components/error-boundary";
+import Error from "./error";
 export default function Home() {
   return (
-    <div className="p-10">
-      <h1 className={`${SS4.className} text-[100px] opacity-50`}>World Cloud</h1>
+    <ErrorBoundary errorComponent={Error}>
       <div className="pl-[9vw] h-screen">
         <WordCloud/>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

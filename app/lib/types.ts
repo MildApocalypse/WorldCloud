@@ -18,3 +18,8 @@ export enum Direction {
     RIGHT
 }
 
+export interface Term {
+    phrase: string;
+    weight: number;
+}
+

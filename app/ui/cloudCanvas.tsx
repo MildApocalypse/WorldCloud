@@ -1,10 +1,10 @@
 'use client'
 import { useEffect, useRef, useState} from 'react'
-import { Word } from '../lib/classes/word';
+import { Word } from '@/app/lib/classes/word';
 import { incrementAngle } from '@/app/lib/utils';
 import Vec2 from 'victor';
-import { Helpers } from '../lib/classes/helpers';
-import { DebugHelpers } from '../lib/classes/debugHelpers';
+import { Helpers } from '@/app/lib/classes/helpers';
+import { DebugHelpers } from '@/app/lib/classes/debugHelpers';
 
 const sizeCategories = 7;   //the divisions of size for each word
 const cellSize = 13;        //the pixel size of each cell in the grid
@@ -13,6 +13,10 @@ const debug = process.env.NEXT_PUBLIC_DEBUG === 'true';
 const stepDebug = process.env.NEXT_PUBLIC_STEPDEBUG === 'true';
 
 export default function CloudCanvas({ tokens }: { tokens: Map<string, number> }) {
+    if(tokens.size === 0){
+        console.log("tokens empty")
+        throw new Error("No data retrieved.");
+    }
 
     //refs needed between renders for step-by-step debugging
     const canvasRef     = useRef<HTMLCanvasElement>(null);
@@ -61,8 +65,8 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
             h.fillGrid(grid, firstWord);
         }
         else {
-            console.log('could not add first word?') //todo: make proper error system
-            return [];
+            console.log('First word out of bounds') //todo: make proper error system
+            return wordPool;
         }
 
         if (!stepDebug) {
@@ -134,7 +138,7 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
     }, [])
 
     return (
-        <div className="relative w-full h-screen">
+        <div className="relative w-full h-fit">
             <canvas
                 ref={canvasRef}
                 className="w-full h-full"

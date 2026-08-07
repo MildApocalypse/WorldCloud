@@ -4,12 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/dev.js",
-    "dev:debug": "node scripts/dev.js --debug",
+    "server": "app\\backend\\venv\\Scripts\\python app\\backend\\main.py",
+    "devc": "concurrently \"npm run dev\" \"npm run server\"",
+    "devc:ph": "concurrently \"npm run dev -- --ph\" \"npm run server\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "concurrently": "^10.0.3",
     "next": "^16.2.9",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

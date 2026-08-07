@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className="p-10">
+        <div className="p-10 h-screen">
           <h1 className={`${SS4.className} text-[100px] opacity-50`}>World Cloud</h1>
           {children}
         </div>

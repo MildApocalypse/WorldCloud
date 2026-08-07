@@ -4,7 +4,7 @@ import Error from "./error";
 export default function Home() {
   return (
     <ErrorBoundary errorComponent={Error}>
-      <div className="pl-[9vw] h-screen">
+      <div className="pl-[9vw] h-full">
         <WordCloud/>
       </div>
     </ErrorBoundary>

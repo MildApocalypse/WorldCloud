@@ -4,6 +4,7 @@ import Vec2 from 'victor'
 
 
 export class Helpers {
+    grid: Array<Array<Word | number>>
     gridSize: Vec2;
     elementSize: Vec2;
     cellSize: number
@@ -12,12 +13,14 @@ export class Helpers {
         this.gridSize = new Vec2(0, 0);
         this.elementSize = new Vec2(0, 0);
         this.cellSize = 0;
+        this.grid = [[0]];
     }
 
     setSizes(size: Vec2, cellSize: number) {
         this.elementSize = size;
         this.cellSize = cellSize;
         this.findGridSize();
+        this.grid = Array.from({ length: this.gridSize.x }, () => Array(this.gridSize.y).fill(0));
     }
 
     findGridSize() {
@@ -28,13 +31,12 @@ export class Helpers {
     }
     /**
      * iteratively moves words to find a place to put them in wordcloud.
-     * @param grid the grid of cells representing the space words are occupying
      * @param word word to be added
      * @param angle the given direction the word is being moved in
      * @param alternate which side of the word is being checked for collisions
      * @returns return the word if word was placed or null if not
      */
-    moveWord(grid: Array<Array<number | Word>>, word: Word, angle: number, alternate: boolean)
+    moveWord(word: Word, angle: number, alternate: boolean)
         : boolean {
         //get rough direction of angle: up, down, left or right
         const direction = new Vec2(Math.cos(angle), Math.sin(angle));
@@ -53,7 +55,7 @@ export class Helpers {
         //we test the side equal and opposite the direction, e.g. up and down. if false, check the other two sides.
         let pushVector = new Vec2(0, 0); //the final vector that the word is moved by
         if (alternate) {
-            const cols = this.checkCollision(word, cardinal, grid);
+            const cols = this.checkCollision(word, cardinal);
             for (const entry of cols.tests) {
                 const overlap = this.findOverlap(word, entry, direction)
                 if (overlap) {
@@ -64,7 +66,7 @@ export class Helpers {
             }
         }
         else {
-            const cols = this.checkCollision(word, (cardinal + 2) % 5, grid);
+            const cols = this.checkCollision(word, (cardinal + 2) % 5);
             for (const entry of cols.tests) {
                 const overlap = this.findOverlap(word, entry, direction);
                 if (overlap) {
@@ -84,10 +86,9 @@ export class Helpers {
      * Check the grid cells covered along the given sides of the given word (either left/right or up/down sides). 
      * @param word the given word
      * @param cardinal the direction to check, if left/right check the horizontal sides, if up/down check the top and bottom sides
-     * @param grid the grid of cells containing all words added so far
      * @returns a set of all hits and whether there are any hits on opposite sides of the word.
      */
-    checkCollision(word: Word, cardinal: Direction, grid: Array<Array<number | Word>>): SideTests {
+    checkCollision(word: Word, cardinal: Direction): SideTests {
         const p1 = new Vec2(word.xSpan[0], word.ySpan[1])
         const p2 = new Vec2(word.xSpan[1], word.ySpan[1])
         const p3 = new Vec2(word.xSpan[0], word.ySpan[0])
@@ -96,12 +97,12 @@ export class Helpers {
         let side1: Set<Word>;
         let side2: Set<Word>;
         if (cardinal < Direction.LEFT) {
-            side1 = this.testGrid(p1, p2, grid);
-            side2 = this.testGrid(p3, p4, grid);
+            side1 = this.testGrid(p1, p2);
+            side2 = this.testGrid(p3, p4);
         }
         else {
-            side1 = this.testGrid(p1, p3, grid);
-            side2 = this.testGrid(p2, p4, grid);
+            side1 = this.testGrid(p1, p3);
+            side2 = this.testGrid(p2, p4);
         }
 
         const collisions = side1.union(side2);
@@ -168,6 +169,7 @@ export class Helpers {
      * @returns 
      */
     measureWord(text: string, font: string): Vec2 {
+        if (typeof OffscreenCanvas === 'undefined') return new Vec2(0,0); // SSR or unsupported
         const canvas = new OffscreenCanvas(0, 0);
         const ctx = canvas.getContext('2d');
         if (!ctx) return new Vec2(0, 0);
@@ -193,13 +195,13 @@ export class Helpers {
         return true;
     }
 
-    testGrid(p1: Vec2, p2: Vec2, grid: Array<Array<Word | number>>): Set<Word> {
+    testGrid(p1: Vec2, p2: Vec2): Set<Word> {
         const hits: Set<Word> = new Set<Word>();
         const [xStart, xEnd] = p1.x < p2.x ? [p1.x, p2.x] : [p2.x, p1.x];
         const [yStart, yEnd] = p1.y < p2.y ? [p1.y, p2.y] : [p2.y, p1.y];
         for (let i = xStart; i <= xEnd; ++i) {
             for (let j = yStart; j <= yEnd; ++j) {
-                const index = grid[i][this.gridSize.y - 1 - j];
+                const index = this.grid[i][this.gridSize.y - 1 - j];
                 if (typeof (index) != 'number') {
                     hits.add(index)
                 }
@@ -213,7 +215,7 @@ export class Helpers {
             for (let j = 0; j < word.cellSize.y; ++j) {
                 const x = word.xSpan[0] + i;
                 const y = word.ySpan[0] + j;
-                grid[x][this.gridSize.y - y - 1] = word; //want 0,0 to be bottom left for ease of use
+                this.grid[x][this.gridSize.y - y - 1] = word; //want 0,0 to be bottom left for ease of use
             }
         }
     }

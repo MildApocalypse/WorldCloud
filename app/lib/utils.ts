@@ -1,3 +1,5 @@
+import { Term } from "./types";
+
 /**
  * finds the inclusive cells covered by a length centered on a point, accounting for odd or even numbers
  * @param center point length is centered on
@@ -21,3 +23,14 @@ export function incrementAngle(angle: number): number{
 
 export const toRadians = (degrees: number) => degrees * (Math.PI / 180);
 export const toDegrees = (radians: number) => radians * (180 / Math.PI);
+
+export function parseTestData(data: Term[]): Map<string, number>|null{
+    const freq = new Map<string, number>();
+    if(data){
+        for (const t of data) {
+            freq.set(t.phrase, (freq.get(t.phrase) ?? 0) + 1);
+        }
+        return freq;
+    }
+    return null
+}

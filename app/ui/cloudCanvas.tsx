@@ -87,10 +87,6 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
         }
         const pair = wordList[indexRef.current]
         const word = h.makeWord(pair[0], pair[1])
-        if (!h.checkBounds(word)) {
-            console.log('word %s was out of bounds when created: (%d, %d)', [word.content, word.location.x, word.location.y]);
-            return;
-        }
         if (addWord(word, h.grid, angleRef.current, h, dh, canvasRef.current)) {
             h.fillGrid(h.grid, word)
             indexRef.current += 1;

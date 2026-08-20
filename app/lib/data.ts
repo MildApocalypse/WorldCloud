@@ -43,7 +43,8 @@ export async function getData(): Promise<Map<string, number>> {
                 freq.set(pair[1][0][0], pair[0])
             }
 
-        }catch{
+        }catch (error){
+            console.log(error)
             throw new Error("Data fetch failed.")
         }
     }

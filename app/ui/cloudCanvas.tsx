@@ -52,10 +52,6 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
 
     function makeWordCloud(): Word[] {
         const wordPool: Word[] = [];
-
-        if (!h.checkBounds(firstWord)) {
-            throw new Error("First word out of bounds")
-        }
         wordPool.push(firstWord);
         h.fillGrid(h.grid, firstWord);
 
@@ -65,9 +61,6 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
 
                 const word = h.makeWord(key, value);
 
-                if (!h.checkBounds(word)) {
-                    throw new Error('word \"' + word.content + '\" was out of bounds when created: (' + word.location.x + ', ' + word.location.y + ')')
-                }
                 if (addWord(word, h.grid, angle, h, dh)) {
                     wordPool.push(word);
                 }

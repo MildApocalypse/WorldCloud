@@ -215,6 +215,7 @@ export class Helpers {
             for (let j = 0; j < word.cellSize.y; ++j) {
                 const x = word.xSpan[0] + i;
                 const y = word.ySpan[0] + j;
+                if(x >= 0 && x < this.gridSize.x - 1 && y >= 0 && y < this.gridSize.y -1)
                 this.grid[x][this.gridSize.y - y - 1] = word; //want 0,0 to be bottom left for ease of use
             }
         }

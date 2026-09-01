@@ -1,0 +1,6 @@
+services:
+  news-pipeline:
+    build: .
+    image: monkeycluster/news-pipeline:latest
+    env_file:
+      - .env

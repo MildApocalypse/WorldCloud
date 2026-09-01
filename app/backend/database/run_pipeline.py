@@ -26,7 +26,8 @@ def run_pipeline() ->list:
     results = process_clusters(results)
     for c in results:
         print(c[len(c)-1])
-
+        
+    print("uploading articles")
     upload_articles(results)
     
     return results

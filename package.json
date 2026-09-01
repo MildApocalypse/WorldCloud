@@ -7,7 +7,7 @@
     "server": "app\\backend\\venv\\Scripts\\python app\\backend\\main.py",
     "devc": "concurrently \"npm run dev\" \"npm run server\"",
     "devc:ph": "concurrently \"npm run dev -- --ph\" \"npm run server\"",
-    "build": "next build",
+    "docker: build": "docker build ",
     "start": "next start",
     "lint": "eslint"
   },

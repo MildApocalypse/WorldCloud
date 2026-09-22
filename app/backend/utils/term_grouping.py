@@ -45,7 +45,8 @@ def keybert_terms(clusters):
         headlines = [h["title"] for h in c if h.get("title")]
         headlines_string = " ".join(headlines)
         term = kb.extract_keywords(headlines_string, candidates=None, keyphrase_ngram_range=(1, 4), stop_words="english", top_n=1)
-        c.append([len(c), term])
+
+        c.append([len(c), [term[0][0], term[0][1]]])
     return clusters
 
 from sentence_transformers import SentenceTransformer

@@ -35,6 +35,7 @@ def upload_articles(articles: list) -> None:
         account_url=ACCOUNT_URL,
         credential=credential
     )
+
     container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
     data = json.dumps(articles, indent=2)
@@ -46,15 +47,4 @@ def upload_articles(articles: list) -> None:
         content_settings=ContentSettings(content_type="application/json"),
     )
 
-def download_articles() -> list:
-    credential = DefaultAzureCredential()
 
-    blob_service_client = BlobServiceClient(
-            account_url=ACCOUNT_URL,
-            credential=credential
-        )
-    container_client = blob_service_client.get_container_client(CONTAINER_NAME)
-
-    data = container_client.download_blob("latest-articles.json").readall()
-    
-    return json.loads(data)

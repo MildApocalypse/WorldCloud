@@ -23,3 +23,10 @@ export interface Term {
     weight: number;
 }
 
+export type article = {
+    title: string;
+    publishedAt: string;
+    url: string;
+    imageUrl: string;
+}
+

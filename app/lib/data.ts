@@ -1,4 +1,5 @@
 import { readFile } from "fs/promises";
+import { article } from "./types";
 
 
 const placeHolders = process.env.NEXT_PUBLIC_PLACEHOLDERWORDS === 'true';
@@ -20,8 +21,9 @@ export function processText(text: string): string[]
     return tokens;
 }
 
-export async function getData(): Promise<Map<string, number>> {
+export async function getData(): Promise<Array<[string, number, Array<article>]>> {
     const freq: Map<string, number> | null = new Map<string, number>();
+    let result: [string, number, article[]][] = [];
 
     if(placeHolders){
         const text = await readPlaceholder("app/data/placeholdertext.txt");
@@ -29,23 +31,33 @@ export async function getData(): Promise<Map<string, number>> {
         for(const t of tokens){
             freq.set(t, (freq.get(t)?? 0) + 1)
         }
+        result = Array.from(freq, ([key, value]) => [key, value, []])
     }
     else{
         try{
             console.log("Awaiting data fetch")
             const res = await fetch("http://localhost:8000/api/headlines")
-            const data: [[...unknown[], [number, [string, number]]]] = await res.json()
-            console.log(data)
+            const data: [[...article[], [number, [string, number]]]] = await res.json()
             
             for(const h of data){
-                const pair = (h as [...unknown[], [number, [string, number]]]).at(-1) as [number, [string, number]]
-                
-                freq.set(pair[1][0][0], pair[0])
-            }
+                const pair = (h as [...article[], [number, [string, number]]]).at(-1) as [number, [string, number]]
+                const articles: article[] = []
 
+                for (const a of h.slice(0, -1)){
+                    const art = a as article;
+                    if(art.imageUrl === "" || !art.imageUrl){
+                        art.imageUrl = "/images/no-thumb.png"
+                    }
+                    console.log(art)
+                    articles.push(art);
+                }
+
+                freq.set(pair[1][0], pair[0])
+                result.push([pair[1][0], pair[0], articles])
+            }
         }catch{
             throw new Error("Data fetch failed.")
         }
     }
-    return freq;
+    return result;
 }

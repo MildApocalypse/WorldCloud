@@ -1,5 +1,5 @@
 import { Word } from '@/app/lib/classes/word';
-import { Vec4, Direction, SideTests } from '@/app/lib/types';
+import { Vec4, Direction, SideTests, article } from '@/app/lib/types';
 import Vec2 from 'victor'
 
 
@@ -13,7 +13,7 @@ export class Helpers {
         this.gridSize = new Vec2(0, 0);
         this.elementSize = new Vec2(0, 0);
         this.cellSize = 0;
-        this.grid = [[0]];
+        this.grid = [];
     }
 
     setSizes(size: Vec2, cellSize: number) {
@@ -66,7 +66,7 @@ export class Helpers {
             }
         }
         else {
-            const cols = this.checkCollision(word, (cardinal + 2) % 5);
+            const cols = this.checkCollision(word, (cardinal + 2) % 4);
             for (const entry of cols.tests) {
                 const overlap = this.findOverlap(word, entry, direction);
                 if (overlap) {
@@ -78,7 +78,9 @@ export class Helpers {
         if (pushVector.isEqualTo(new Vec2(0, 0))) {
             return false
         }
-        word.move(new Vec2(Math.round(pushVector.x) * Math.sign(direction.x), Math.round(pushVector.y) * Math.sign(direction.y)));
+        word.move(new Vec2(
+            word.location.x + Math.round(pushVector.x) * Math.sign(direction.x), 
+            word.location.y + Math.round(pushVector.y) * Math.sign(direction.y)));
         return true
     }
 
@@ -152,13 +154,13 @@ export class Helpers {
      * @param value the frequency of the word that will derive its size
      * @returns the created word
      */
-    makeWord(key: string, value: number): Word {
+    makeWord(content: string, value: number, articles: article[]): Word {
         const fontSize = (value * this.cellSize);
-        const wordSize = this.measureWord(key, fontSize.toString() + 'px Arial')
+        const wordSize = this.measureWord(content, fontSize.toString() + 'px Arial')
         const cells = new Vec2(Math.ceil(wordSize.x / this.cellSize), Math.ceil(wordSize.y / this.cellSize))
         const center = new Vec2(Math.floor(this.gridSize.x / 2) - this.gridSize.x % 2, Math.floor(this.gridSize.y / 2) - this.gridSize.y % 2)
 
-        const word: Word = new Word(key, wordSize, cells, value, center);
+        const word: Word = new Word(content, articles, wordSize, cells, value, center);
         return word;
     }
 
@@ -195,6 +197,23 @@ export class Helpers {
         return true;
     }
 
+    fitWord(word: Word): Word | null {
+        let resizedWord = word;
+        while(resizedWord.cellSize.x > this.gridSize.x){
+            if(resizedWord.frequencyCategory <= 1){
+                return null
+            }
+            resizedWord = this.makeWord(resizedWord.content, resizedWord.frequencyCategory-1, resizedWord.articles)
+        }
+        return resizedWord
+    }
+
+    /**
+     * given two point coordinates, test each cell (inclusive) between them 
+     * @param p1 point 1
+     * @param p2 point 2
+     * @returns all the words that were overlapping these cells
+     */
     testGrid(p1: Vec2, p2: Vec2): Set<Word> {
         const hits: Set<Word> = new Set<Word>();
         const [xStart, xEnd] = p1.x < p2.x ? [p1.x, p2.x] : [p2.x, p1.x];
@@ -210,7 +229,7 @@ export class Helpers {
         return hits;
     }
 
-    fillGrid(grid: Array<Array<number | Word>>, word: Word) {
+    fillGrid(word: Word) {
         for (let i = 0; i < word.cellSize.x; ++i) {
             for (let j = 0; j < word.cellSize.y; ++j) {
                 const x = word.xSpan[0] + i;

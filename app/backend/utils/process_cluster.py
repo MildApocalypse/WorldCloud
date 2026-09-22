@@ -3,6 +3,7 @@ from collections import defaultdict
 
 def process_clusters(clusters):
     processed_clusters = []
+    
     for cluster in clusters:
         repeat_author = defaultdict(int)
         cluster_weight = cluster[-1][0]

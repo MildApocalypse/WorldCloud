@@ -5,6 +5,7 @@ import { incrementAngle } from '@/app/lib/utils';
 import Vec2 from 'victor';
 import { Helpers } from '@/app/lib/classes/helpers';
 import { DebugHelpers } from '@/app/lib/classes/debugHelpers';
+import { article } from '../lib/types';
 
 const sizeCategories = 7;   //the divisions of size for each word
 const cellSize = 13;        //the pixel size of each cell in the grid
@@ -12,22 +13,23 @@ const cellSize = 13;        //the pixel size of each cell in the grid
 const debug = process.env.NEXT_PUBLIC_DEBUG === 'true';
 const stepDebug = process.env.NEXT_PUBLIC_STEPDEBUG === 'true';
 
-export default function CloudCanvas({ tokens }: { tokens: Map<string, number> }) {
-    if (tokens.size === 0) {
-        console.log("tokens empty")
+export default function WordCloud({ clusters, setArticles }: {
+     clusters: Array<[string, number, article[]]>
+     setArticles: (articles: article[]) => void; 
+}) {
+    if (clusters.length === 0) {
         throw new Error("No data sent to cloud builder.");
     }
 
     console.log("render")
+
     //refs needed between renders for step-by-step debugging
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const angleRef = useRef<number>(0);
     const indexRef = useRef<number>(1);
     const addedWordsRef = useRef<Array<Word>>([]);
+    const gridRef = useRef<Array<Array<Word | number>>>([])
 
-
-    //added words is mainly needed for the step-by-step debugger to trigger a rerender when a new word is added, 
-    //but is also used by the production code for convenience
     const [addedWords, updateAddedWords] = useState<Word[]>([]);
     const [size, setSize] = useState(new Vec2(0, 0));
 
@@ -36,70 +38,82 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
     const dh = new DebugHelpers();
     dh.setSizes(cellSize, h.gridSize);
 
-    const sorted = [...tokens.entries()].sort((a, b) => (b[1] - a[1]));
+    const sorted = clusters.sort((a, b) => (b[1] - a[1]));
     const highest = sorted[0][1];
-    const wordList: [string, number][] = [...sorted].map(([key, value]) => [key, Math.trunc(value / highest * sizeCategories - 0.000000001 + 1)]);
-    
+    const wordList: [string, number, article[]][] = sorted.map(([key, value, articles]) => [key, Math.trunc(value / highest * sizeCategories - 0.000000001 + 1), articles]);
+
     const firstElem = wordList[0];
-    let firstWord = h.makeWord(firstElem[0], firstElem[1]);
+    let firstWord = h.makeWord(firstElem[0], firstElem[1], firstElem[2]);
 
     if (firstWord.cellSize.x > h.gridSize.x) {
         const adjustCellSize = Math.floor(size.x / firstWord.cellSize.x) - 1
         h.setSizes(size, adjustCellSize);
         dh.setSizes(adjustCellSize, h.gridSize);
-        firstWord = h.makeWord(firstElem[0], firstElem[1]);
+        firstWord = h.makeWord(firstElem[0], firstElem[1], firstElem[2]);
     }
 
     function makeWordCloud(): Word[] {
         const wordPool: Word[] = [];
         wordPool.push(firstWord);
-        h.fillGrid(h.grid, firstWord);
+        h.fillGrid(firstWord);
+        gridRef.current = h.grid
 
         if (!stepDebug) {
             let angle = 0;
-            wordList.slice(1).forEach(([key, value]) => {
+            wordList.slice(1).forEach(([content, value, articles]) => {
 
-                const word = h.makeWord(key, value);
-
-                if (addWord(word, h.grid, angle, h, dh)) {
-                    wordPool.push(word);
+                const word = h.fitWord(h.makeWord(content, value, articles));
+                if (!word) { console.log("could not fit word: %s", content); return }
+                const startpos = new Vec2(word.location.x, word.location.y);
+                let attemptAngle = angle
+                while (attemptAngle - angle < 2 * Math.PI) {
+                    if (addWord(word, attemptAngle, h)) {
+                        wordPool.push(word);
+                        break;
+                    }
+                    attemptAngle = incrementAngle(attemptAngle)
+                    word.move(startpos);
                 }
                 angle = incrementAngle(angle);
             });
         }
-
-
         return wordPool;
     }
 
     //used to add one word at a time for debug purposes
     function addOne() {
+        const h = new Helpers();
+        const cellSize = Math.floor(size.x / gridRef.current.length)
+        h.setSizes(size, cellSize)
+        h.grid = gridRef.current
+
         if (h.grid.length === 0) {
             console.log('grid is not initialized');
             return;
         }
-        const pair = wordList[indexRef.current]
-        const word = h.makeWord(pair[0], pair[1])
+        const data = wordList[indexRef.current]
+        const word = h.makeWord(data[0], data[1], data[2])
         if (!h.checkBounds(word)) {
             console.log('word %s was out of bounds when created: (%d, %d)', [word.content, word.location.x, word.location.y]);
             return;
         }
-        if (addWord(word, h.grid, angleRef.current, h, dh, canvasRef.current)) {
-            h.fillGrid(h.grid, word)
+        const canvas = canvasRef.current
+        if (!canvas) return;
+        if (addWord(word, angleRef.current, h, dh, canvas)) {
+            dh.fillGrid(word, gridRef.current)
             indexRef.current += 1;
             updateAddedWords(prev => [...prev, word]);
-            if (debug && canvasRef.current && h.grid) {
-                dh.drawGrid(canvasRef.current);
-                dh.drawFilledCells(canvasRef.current, h.grid);
-                dh.drawAngle(canvasRef.current, angleRef.current, addedWords[0].location);
-            }
         }
         angleRef.current = incrementAngle(angleRef.current);
     }
 
+    function handleWordClick(articles: article[]) {
+        setArticles(articles)
+    }
+
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas || !tokens.size) return;
+        if (!canvas) return;
 
         let resizeTimer = setTimeout(() => { return });
         const observer = new ResizeObserver(() => {
@@ -125,29 +139,39 @@ export default function CloudCanvas({ tokens }: { tokens: Map<string, number> })
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas || size.x === 0) return;
-        
+
         if (debug) {
+            canvas.width = h.elementSize.x;
+            canvas.height = h.elementSize.y;
+
+            dh.clear(canvas);
             dh.drawGrid(canvas);
-            dh.drawFilledCells(canvas, h.grid);
+            dh.drawFilledCells(canvas, gridRef.current);
         }
     }, [addedWords])
 
     return (
-        <div className="relative h-full">
+        <>
             <canvas
                 ref={canvasRef}
-                className="w-full h-4/5"
+                className='h-full w-full'
             />
-            <WordCloudHTML words={addedWords} width={h.elementSize.x} height={h.elementSize.y} h={h} />
+            <WordCloudHTML words={addedWords} width={h.elementSize.x} height={h.elementSize.y} h={h} handleClick={handleWordClick} />
             {stepDebug && <button
                 className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200"
                 onClick={addOne}>
                 Add Word</button>}
-        </div>
+        </>
     )
 }
 
-function WordCloudHTML({ words, width, height, h }: { words: Word[], width: number, height: number, h: Helpers }) {
+function WordCloudHTML({ words, width, height, h, handleClick }: {
+    words: Word[],
+    width: number,
+    height: number,
+    h: Helpers,
+    handleClick: (articles: article[]) => void
+}) {
     const ratio: Vec2 = new Vec2(width / h.gridSize.x, height / h.gridSize.y);
 
     function convert(word: Word): Vec2 {
@@ -161,38 +185,53 @@ function WordCloudHTML({ words, width, height, h }: { words: Word[], width: numb
     return (<>
         {words.map((word) => {
             const position = convert(word);
-            return (<p key={word.content} style={{
-                position: 'absolute', left: position.x, top: height - position.y,
-                font: (word.frequencyCategory * h.cellSize).toString() + 'px Arial'
-            }}>
-                {word.content}
-            </p>
+            return (
+
+                <button 
+                    onClick={() => handleClick(word.articles)}
+                    key={word.content} 
+                    style={{
+                        position: 'absolute', left: position.x, top: height - position.y,
+                        font: (word.frequencyCategory * h.cellSize).toString() + 'px Arial'
+                    }}
+                    className='hover:underline'>
+
+                    {word.content}
+
+                </button>
             )
         })}
     </>)
 }
 
-function addWord(word: Word, grid: Array<Array<number | Word>>, angle: number, h: Helpers, dh: DebugHelpers,
-    canvas?: HTMLCanvasElement | null): boolean {
+function addWord(word: Word, angle: number, h: Helpers, dh?: DebugHelpers, canvas?: HTMLCanvasElement): boolean {
     let attempts = 0;
-    let alternate = true;
+    let alternate = true; //alternate is used to check each pair of opposite sides of the word for collisions
     let moved = true;
 
+    //iteratively move word, resolving each collision until there are no more collisions or word is out of bounds
     while (attempts < 300) {
         const prev = moved;
         moved = h.moveWord(word, angle, alternate);
-        if (!h.checkBounds(word)) break;
-        if (canvas) {
+
+        if (stepDebug && dh && canvas) {
+            dh.clear(canvas)
             dh.drawGrid(canvas)
-            dh.drawFilledCells(canvas, grid);
-            dh.drawCurrentSpace(canvas, word);
+            dh.drawFilledCells(canvas, h.grid)
+            dh.drawCurrentSpace(canvas, word)
         }
+
+        if (!h.checkBounds(word)) break;
+
+        //we know there are no more collisions when the word has not moved after checking all sides for collisions
         if (!prev && !moved) {
-            h.fillGrid(grid, word);
+            h.fillGrid(word);
             return true;
         }
+
         attempts++;
         alternate = !alternate;
+
     }
     return false
 }

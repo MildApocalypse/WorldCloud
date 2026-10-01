@@ -6,9 +6,10 @@ import Vec2 from 'victor';
 import { Helpers } from '@/app/lib/classes/helpers';
 import { DebugHelpers } from '@/app/lib/classes/debugHelpers';
 import { article } from '../lib/types';
+import clsx from "clsx";
 
 const sizeCategories = 7;   //the divisions of size for each word
-const cellSize = 13;        //the pixel size of each cell in the grid
+const cellSize = 11;        //the pixel size of each cell in the grid
 
 const debug = process.env.NEXT_PUBLIC_DEBUG === 'true';
 const stepDebug = process.env.NEXT_PUBLIC_STEPDEBUG === 'true';
@@ -29,6 +30,7 @@ export default function WordCloud({ clusters, setArticles }: {
     const indexRef = useRef<number>(1);
     const addedWordsRef = useRef<Array<Word>>([]);
     const gridRef = useRef<Array<Array<Word | number>>>([])
+    const wordRef = useRef<Word>(null);
 
     const [addedWords, updateAddedWords] = useState<Word[]>([]);
     const [size, setSize] = useState(new Vec2(0, 0));
@@ -40,32 +42,42 @@ export default function WordCloud({ clusters, setArticles }: {
 
     const sorted = clusters.sort((a, b) => (b[1] - a[1]));
     const highest = sorted[0][1];
-    const wordList: [string, number, article[]][] = sorted.map(([key, value, articles]) => [key, Math.trunc(value / highest * sizeCategories - 0.000000001 + 1), articles]);
+    const wordList: [string, number, article[]][] = sorted.map(([key, value, articles]) => [key, Math.pow((value / highest),1.25) * sizeCategories + 0.7, articles]);
 
-    const firstElem = wordList[0];
-    let firstWord = h.makeWord(firstElem[0], firstElem[1], firstElem[2]);
+    
+    function makeWordCloud(words: Word[]): Word[] {
+        const firstElem = wordList[0];
+        let firstWord = h.makeWord(firstElem[0], firstElem[1], firstElem[2]);
 
-    if (firstWord.cellSize.x > h.gridSize.x) {
-        const adjustCellSize = Math.floor(size.x / firstWord.cellSize.x) - 1
-        h.setSizes(size, adjustCellSize);
-        dh.setSizes(adjustCellSize, h.gridSize);
-        firstWord = h.makeWord(firstElem[0], firstElem[1], firstElem[2]);
-    }
+        if (firstWord.cellSize.x > h.gridSize.x) {
+            const adjustCellSize = Math.floor(size.x / firstWord.cellSize.x) - 1
+            h.setSizes(size, adjustCellSize);
+            dh.setSizes(adjustCellSize, h.gridSize);
+            firstWord = h.makeWord(firstElem[0], firstElem[1], firstElem[2]);
+        }
 
-    function makeWordCloud(): Word[] {
+        firstWord.selected = true;
+        if(!wordRef.current){
+            firstWord.current = true;
+            wordRef.current = firstWord;
+            setArticles(firstWord.articles)
+        }
+
         const wordPool: Word[] = [];
         wordPool.push(firstWord);
+
         h.fillGrid(firstWord);
         gridRef.current = h.grid
-
+        
         if (!stepDebug) {
             let angle = 0;
-            wordList.slice(1).forEach(([content, value, articles]) => {
+            words.slice(1).forEach((w) => {
+                const word = h.fitWord(w);
+                if (!word) { console.log("could not fit word: %s", w.content); return }
 
-                const word = h.fitWord(h.makeWord(content, value, articles));
-                if (!word) { console.log("could not fit word: %s", content); return }
                 const startpos = new Vec2(word.location.x, word.location.y);
                 let attemptAngle = angle
+
                 while (attemptAngle - angle < 2 * Math.PI) {
                     if (addWord(word, attemptAngle, h)) {
                         wordPool.push(word);
@@ -107,8 +119,14 @@ export default function WordCloud({ clusters, setArticles }: {
         angleRef.current = incrementAngle(angleRef.current);
     }
 
-    function handleWordClick(articles: article[]) {
-        setArticles(articles)
+    function handleWordClick(word: Word) {
+        word.current = true;
+        word.selected = true;
+        if(wordRef.current){
+            wordRef.current.current = false;
+        }
+        wordRef.current = word;
+        setArticles(word.articles)
     }
 
     useEffect(() => {
@@ -132,7 +150,18 @@ export default function WordCloud({ clusters, setArticles }: {
         const canvas = canvasRef.current;
         if (!canvas || size.x === 0) return;
 
-        addedWordsRef.current = makeWordCloud();
+        let words: Word[] = []
+
+        if(!addedWordsRef.current.length){
+            wordList.forEach(([content, value, articles]) => {
+                words.push(h.makeWord(content, value, articles));
+            });
+        }
+        else{
+            words = addedWordsRef.current
+        }
+
+        addedWordsRef.current = makeWordCloud(words);
         updateAddedWords(addedWordsRef.current)
     }, [size])
 
@@ -170,7 +199,7 @@ function WordCloudHTML({ words, width, height, h, handleClick }: {
     width: number,
     height: number,
     h: Helpers,
-    handleClick: (articles: article[]) => void
+    handleClick: (word: Word) => void
 }) {
     const ratio: Vec2 = new Vec2(width / h.gridSize.x, height / h.gridSize.y);
 
@@ -188,13 +217,17 @@ function WordCloudHTML({ words, width, height, h, handleClick }: {
             return (
 
                 <button 
-                    onClick={() => handleClick(word.articles)}
+                    onClick={() => handleClick(word)}
                     key={word.content} 
                     style={{
                         position: 'absolute', left: position.x, top: height - position.y,
                         font: (word.frequencyCategory * h.cellSize).toString() + 'px Arial'
                     }}
-                    className='hover:underline'>
+                    className={clsx(
+                        'hover:underline',
+                        word.selected && 'opacity-50',
+                        word.current && 'opacity-100 underline'
+                    )}>
 
                     {word.content}
 

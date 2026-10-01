@@ -48,7 +48,6 @@ export async function getData(): Promise<Array<[string, number, Array<article>]>
                     if(art.imageUrl === "" || !art.imageUrl){
                         art.imageUrl = "/images/no-thumb.png"
                     }
-                    console.log(art)
                     articles.push(art);
                 }
 

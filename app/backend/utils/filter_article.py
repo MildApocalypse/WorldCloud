@@ -1,5 +1,5 @@
 def check_required(article):
-    if not article.get("title") or not article.get("description") or not article.get("author"):
+    if not article.get("title") or not article.get("description") or not article.get("author") or not article.get("url"):
         return False
     if "[Removed]" in article["title"]:
         return False
@@ -18,7 +18,6 @@ def filter_spam(articles):
 
     print("removing sequentials")
     articles.sort(key=lambda article: article["publishedAt"])
-    
     filtered_articles = process_removal(articles, "author")
     print("num of articles: " + str(len(filtered_articles)))
 

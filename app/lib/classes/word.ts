@@ -10,6 +10,8 @@ export class Word{
     location: Vec2 //cell coordinates
     xSpan: [number, number] //0 - left, 1 - right
     ySpan: [number, number] //0 - bottom, 1 - top
+    selected: boolean
+    current: boolean
 
     constructor(content: string, articles: article[], size: Vec2, cellSize: Vec2, freq: number, loc: Vec2 ){
         this.content = content;
@@ -20,6 +22,8 @@ export class Word{
         this.location = loc;
         this.xSpan = getRange(this.location.x, this.cellSize.x);
         this.ySpan = getRange(this.location.y, this.cellSize.y);
+        this.selected = false;
+        this.current = false;
     }
 
     move(vector: Vec2){

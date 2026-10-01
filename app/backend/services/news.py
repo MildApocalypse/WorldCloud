@@ -13,4 +13,10 @@ def get_trending_articles(query):
         "language": "en",
         "sortBy": "publishedAt",
     })
+    res_json = response.json()
+    if(res_json.get('status') == 'error'):
+        print('code: ' + res_json.get('code'))
+        print('message: ' + res_json.get('message'))
+        return([])
+    
     return response.json().get("articles", [])

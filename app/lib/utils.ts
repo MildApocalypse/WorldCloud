@@ -18,7 +18,7 @@ export function getRange(center: number, length: number): [number, number]{
  * @returns new angle
  */
 export function incrementAngle(angle: number): number{
-    return angle + toRadians(Math.random() * 10 + 30*(Math.abs(Math.sin(angle))));
+    return angle + toRadians(10 + 30*(Math.abs(Math.sin(angle))));
 }
 
 export const toRadians = (degrees: number) => degrees * (Math.PI / 180);

@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
-
 import { article } from "../lib/types";
 
-export default function LinksPanel({ articles }: {articles: article[]} ){
+export default function LinksPanel({ articles, tabOpen}: {articles: article[], tabOpen: boolean} ){
+    
     return (
         <>
             {articles.map((a) =>{
@@ -12,8 +12,22 @@ export default function LinksPanel({ articles }: {articles: article[]} ){
                 return(
                     <div key={a.title} className="py-5">
                         <div className="block">
-                            <a href={a.url} className="hover:underline"style={{font: '18px Arial'}}>
-                                {a.imageUrl && <img src={a.imageUrl} alt="" className="float-left w-24 mr-3" loading="lazy"></img>}
+                            <a 
+                                href={a.url} 
+                                target={tabOpen? "_blank" : undefined} rel={tabOpen? "noopener noreferrer" : undefined} 
+                                className="hover:underline"
+                                style={{font: '18px Arial'}}>
+                                
+                                {a.imageUrl && <img 
+                                    src={a.imageUrl} 
+                                    onError={(e)=>{
+                                        const img = e.currentTarget
+                                        img.onerror = null
+                                        img.src = "/images/no-thumb.png"}} 
+                                    alt="" 
+                                    className="float-left w-24 mr-3" 
+                                    loading="lazy">
+                                </img>}
                                 {a.title}
                             </a>
                         </div>

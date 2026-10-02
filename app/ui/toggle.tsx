@@ -1,7 +1,7 @@
 export default function Toggle({ checked, onChange }: {checked: boolean, onChange: (checked: boolean) => void}) {
   return (
     <>
-        <p className="pl-3"> Open article link in new tab </p>
+        <p className="pl-3"> Open article links in new tab </p>
         <button
         type="button"
         role="switch"

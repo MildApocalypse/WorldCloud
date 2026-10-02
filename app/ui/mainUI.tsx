@@ -10,7 +10,7 @@ import { SS4 } from "./fonts";
 
 export default function MainUI({clusters}: {clusters: [string, number, article[]][]}) {
     const [articles, setArticles] = useState<article[]>([])
-    const [on, setOn] = useState(true);
+    const [on, setOn] = useState(false);
 
     return (
         <>

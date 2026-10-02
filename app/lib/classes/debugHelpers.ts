@@ -15,13 +15,32 @@ export class DebugHelpers {
         this.gridSize = gridSize;
     }
 
+    fillGrid(word: Word, grid: Array<Array<Word | number>>) {
+        for (let i = 0; i < word.cellSize.x; ++i) {
+            for (let j = 0; j < word.cellSize.y; ++j) {
+                const x = word.xSpan[0] + i;
+                const y = word.ySpan[0] + j;
+                if(x >= 0 && x < this.gridSize.x - 1 && y >= 0 && y < this.gridSize.y -1)
+                grid[x][this.gridSize.y - y - 1] = word; //want 0,0 to be bottom left for ease of use
+            }
+        }
+    }
+
+    clear(canvas: HTMLCanvasElement) {
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+    }
     drawGrid(canvas: HTMLCanvasElement) {
         const ctx = canvas.getContext('2d');
         if (!ctx) return
 
         const xDiv = canvas.width / this.cellSize;
         const yDiv = canvas.height / this.cellSize;
-
+        console.log("cellsize: ", this.cellSize)
+        console.log("canvassize: ", {x: canvas.width, y: canvas.height})
+        console.log("xdiv: %d, ydiv: %d", xDiv, yDiv)
         const xStart = ((xDiv % 1) * this.cellSize) / 2;
         const yStart = ((yDiv % 1) * this.cellSize) / 2;
 

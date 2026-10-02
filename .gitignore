@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#image
+image/
+
+#python environment
+app/backend/venv/
+
+#docker
+dockerfile
+docker-compose.yml
+*.dockerignore

@@ -6,7 +6,7 @@ from database.article_access import upload_articles
 from pathlib import Path
 import json
 
-def run_pipeline(test: bool) ->list:
+def run_pipeline(test: bool, upload: bool) ->list:
     queries = ["business", "entertainment", "general", "health", "science", "sports", "technology"]
     all_articles = []
     
@@ -46,7 +46,7 @@ def run_pipeline(test: bool) ->list:
     for c in results:
         print(c[len(c)-1])
 
-    if not test:
+    if not test and upload:
         print("uploading articles")
         upload_articles(results)
     

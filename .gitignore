@@ -45,3 +45,7 @@ image/
 
 #python environment
 app/backend/venv/
+
+#docker
+dockerfile
+docker-compose.yml

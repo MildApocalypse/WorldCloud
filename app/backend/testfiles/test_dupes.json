@@ -1,0 +1,139 @@
+{
+
+    "status": "ok",
+    "totalResults": 5099,
+    "articles": [
+        {
+            "source": {
+                "id": null,
+                "name": "Gizmodo.com"
+            },
+            "author": "Kyle Torpey",
+            "title": "Why Bitcoin’s Price Is Spiking This Week",
+            "description": "Bitcoin’s latest rally comes as Treasury debt buybacks and expanding U.S. sanctions highlight the risks of a dollar-dominated financial system.",
+            "url": "https://gizmodo.com/why-bitcoins-price-is-spiking-this-week-2000803801",
+            "urlToImage": "https://gizmodo.com/app/uploads/2026/08/why-bitcoin-price-is-spiking-1200x675.jpg",
+            "publishedAt": "2026-08-27T17:50:23Z"
+        },
+        {
+            "source": {
+                "id": null,
+                "name": "Gizmodo.com"
+            },
+            "author": "Kyle Torpey",
+            "title": "Elon Musk’s X Sues Bitcoin Account Network It Says Farmed £207,000 Via Fake Engagement",
+            "description": "X wants the money rewarded to accounts that copy-pasted content and faked engagement returned.",
+            "url": "https://gizmodo.com/elon-musks-x-sues-bitcoin-account-network-it-says-farmed-207000-via-fake-engagement-2000814900",
+            "urlToImage": "https://gizmodo.com/app/uploads/2025/12/GettyImages-1562223166-1200x675.jpg",
+            "publishedAt": "2026-09-21T23:05:25Z"
+        },
+        {
+            "source": {
+                "id": null,
+                "name": "Slashdot.org"
+            },
+            "author": "EditorDavid",
+            "title": "Bitcoin-based Liquid Network Says $320 Million Withdrawn in Hack",
+            "description": "Reuters reports:\n\n\nLiquid Network, a Bitcoin-based payments and settlement network, said on Sunday that about $320 million was withdrawn from its federation wallet in a hack.\n\"Purported white-hat hackers\" withdrew around 4,000 of the 4,200 bitcoin held in its…",
+            "url": "https://yro.slashdot.org/story/26/09/07/0727220/bitcoin-based-liquid-network-says-320-million-withdrawn-in-hack",
+            "urlToImage": "https://a.fsdn.com/sd/topics/bitcoin_64.png",
+            "publishedAt": "2026-09-07T07:30:00Z"
+        },
+        {
+            "source": {
+                "id": null,
+                "name": "Slashdot.org"
+            },
+            "author": "EditorDavid",
+            "title": "Bitcoin Surges to $86,455, an 8-Month High, After America's SEC Announces Tokenized Stock Experiment",
+            "description": "August 15: $62,991 \n September 23: $86,456 \n\n\n\n\nBitcoin shot up 37% over the last 39 days, reaching an eight-month high on Monday. \"Bitcoin is back,\" declares Yahoo Finance:\n\nThe token held near $86,000 on Tuesday after a stunning multisession rally... [Funds…",
+            "url": "https://slashdot.org/story/26/09/23/0744202/bitcoin-surges-to-86455-an-8-month-high-after-americas-sec-announces-tokenized-stock-experiment",
+            "urlToImage": "https://a.fsdn.com/sd/topics/bitcoin_64.png",
+            "publishedAt": "2026-09-23T11:34:00Z"
+        },
+        {
+            "source": {
+                "id": null,
+                "name": "Gizmodo.com"
+            },
+            "author": "Kyle Torpey",
+            "title": "The U.S. Government Is Using Your Financial Data to Decide Who Gets Pulled Over",
+            "description": "Border Patrol is mining Americans’ financial activity to identify people for potential traffic stops.",
+            "url": "https://gizmodo.com/the-u-s-government-is-using-your-financial-data-to-decide-who-gets-pulled-over-2000809097",
+            "urlToImage": "https://gizmodo.com/app/uploads/2026/09/Financial-Data-Used-By-Police-Pull-Over-e1788959726700-1200x675.jpg",
+            "publishedAt": "2026-09-09T16:50:59Z"
+        },
+        {
+            "source": {
+                "id": null,
+                "name": "Yahoo Entertainment"
+            },
+            "author": "David Pan",
+            "title": "Bitcoin Slips Below $80,000 After Kevin Warsh Inflation Vow",
+            "description": "Bitcoin slipped back below $80,000 on Friday after Federal Reserve Chair Kevin Warsh pledged to bring inflation back to target, pushing short-term Treasury y...",
+            "url": "https://finance.yahoo.com/markets/crypto/articles/bitcoin-slips-below-80-000-162446162.html",
+            "urlToImage": "https://s.yimg.com/lo/mysterio/api/0f6885aba7cc8ba4fed5f063c209ef1d40a4809ee6bef95172a8d4a404aeb7f2/lightyear_networkapi/resizefill_w1200%3Bquality_80%3Bformat_webp/https%3A%2F%2Fmedia.zenfs.com%2Fen%2Fbloomberg_holding_pen_162%2Fa642177e700a4ac1ba788681f7fd93ed.jpg",
+            "publishedAt": "2026-08-28T16:24:46Z"
+        },
+        {
+            "source": {
+                "id": null,
+                "name": "Yahoo Entertainment"
+            },
+            "author": null,
+            "title": "The Debasement Trade Splits as Gold and Bitcoin Bets Diverge",
+            "description": null,
+            "url": "https://consent.yahoo.com/v2/collectConsent?sessionId=1_cc-session_cc596137-6adc-4623-a1fa-7a51b3e56337",
+            "urlToImage": null,
+            "publishedAt": "2026-09-15T12:00:00Z"
+        },
+        {
+            "source": {
+                "id": null,
+                "name": "Yahoo Entertainment"
+            },
+            "author": "Suvashree Ghosh",
+            "title": "A $320 Million Hack Exposes the Cracks in Crypto’s Plumbing",
+            "description": "The $320 million hack of the Bitcoin-linked Liquid Network is another dent to crypto’s reputation as the industry tries to convince banks and institutional i...",
+            "url": "https://finance.yahoo.com/markets/crypto/articles/320-million-hack-exposes-cracks-121936077.html",
+            "urlToImage": "https://s.yimg.com/lo/mysterio/api/0dc0b9c0b3c9a6cf0acfaa81313a51bd85942f8cfac26a65f4f220f8f7cc44a0/lightyear_networkapi/resizefill_w1200%3Bquality_80%3Bformat_webp/https%3A%2F%2Fmedia.zenfs.com%2Fen%2Fbloomberg_holding_pen_162%2F6d7c72c0389420ca905a519ace1c4c66.jpg",
+            "publishedAt": "2026-09-08T12:19:36Z"
+        },
+        {
+            "source": {
+                "id": null,
+                "name": "Gizmodo.com"
+            },
+            "author": "Bruce Gil",
+            "title": "Bitcoin Tops $80,000 as the Treasury Secretary Weakens the Dollar",
+            "description": "Recent moves by the Trump administration have been boosting bitcoin and other crypto.",
+            "url": "https://gizmodo.com/bitcoin-tops-80000-as-the-treasury-secretary-weakens-the-dollar-2000802885",
+            "urlToImage": "https://gizmodo.com/app/uploads/2026/03/Iran-War-Bitcoin-Crypto-Markets-1200x675.jpg",
+            "publishedAt": "2026-08-25T17:15:45Z"
+        },
+        {
+            "source": {
+                "id": null,
+                "name": "Gizmodo.com"
+            },
+            "author": "Kyle Torpey",
+            "title": "The First Quantum-Resistant Bitcoin Transaction Has Been Mined",
+            "description": "StarkWare’s experiment shows Bitcoin users may have an emergency escape hatch for quantum attacks.",
+            "url": "https://gizmodo.com/the-first-quantum-resistant-bitcoin-transaction-has-been-mined-2000804119",
+            "urlToImage": "https://gizmodo.com/app/uploads/2026/08/quantum-computer-bitcoin-1200x675.jpg",
+            "publishedAt": "2026-08-30T14:07:28Z"
+        },
+        {
+            "source": {
+                "id": null,
+                "name": "Yahoo Entertainment"
+            },
+            "author": "test mctestface",
+            "title": "Bitcoin goes under $80,000 After Kevin Warsh Inflation",
+            "description": "Bitcoin slipped back below $80,000 on Friday after Federal Reserve Chair Kevin Warsh pledged to bring inflation back to target, pushing short-term Treasury y...",
+            "url": "https://finance.yahoo.com/markets/crypto/articles/bitcoin-slips-below-80-000-162446162.html",
+            "urlToImage": "https://s.yimg.com/lo/mysterio/api/0f6885aba7cc8ba4fed5f063c209ef1d40a4809ee6bef95172a8d4a404aeb7f2/lightyear_networkapi/resizefill_w1200%3Bquality_80%3Bformat_webp/https%3A%2F%2Fmedia.zenfs.com%2Fen%2Fbloomberg_holding_pen_162%2Fa642177e700a4ac1ba788681f7fd93ed.jpg",
+            "publishedAt": "2026-08-28T16:24:46Z"
+        }
+    ]
+}

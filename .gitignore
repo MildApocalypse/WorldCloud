@@ -49,3 +49,4 @@ app/backend/venv/
 #docker
 dockerfile
 docker-compose.yml
+*.dockerignore

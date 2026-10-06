@@ -1,6 +1,6 @@
 'use client'
 
-import WordCloud from "./WordCloud";
+import WordCloud from "./wordCloud";
 import LinksPanel from "./linksPanel";
 import Toggle from "./toggle";
 import { article } from "../lib/types";

@@ -3,7 +3,7 @@ const { execSync } = require('child_process');
 const args = process.argv.slice(2);
 const flags = {
   debug: args.includes('--debug'),
-  ph: args.includes('--ph'),
+  ph: args.includes('--place'),
   stepdebug: args.includes('--stepdebug'),
 };
 

@@ -6,9 +6,9 @@ router = APIRouter(prefix="/api")
 @router.get("/tests")
 async def get_tests():
     return [
-        [[], [10, ["test phrase", 1.0]]],
-        [[], [9, ["very long very big incredibly long test phrase hello", 1.0]]],
-        [[], [5, ["hello world", 0.8]]]
+        [[10, ["test phrase", 1.0]]],
+        [[9, ["very long very big incredibly long test phrase hello", 1.0]]],
+        [[5, ["hello world", 0.8]]]
     ]
 
 @router.get("/headlines")

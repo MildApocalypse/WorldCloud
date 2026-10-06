@@ -9,7 +9,6 @@ import { article } from '../lib/types';
 import clsx from "clsx";
 
 const sizeCategories = 7;   //the divisions of size for each word
-const cellSize = 11;        //the pixel size of each cell in the grid
 
 const debug = process.env.NEXT_PUBLIC_DEBUG === 'true';
 const stepDebug = process.env.NEXT_PUBLIC_STEPDEBUG === 'true';
@@ -34,6 +33,7 @@ export default function WordCloud({ clusters, setArticles }: {
 
     const [addedWords, updateAddedWords] = useState<Word[]>([]);
     const [size, setSize] = useState(new Vec2(0, 0));
+    const [cellSize, setCellSize] = useState(11) //the pixel size of each cell in the grid
 
     const h = new Helpers();
     h.setSizes(size, cellSize);
@@ -44,7 +44,6 @@ export default function WordCloud({ clusters, setArticles }: {
     const highest = sorted[0][1];
     const wordList: [string, number, article[]][] = sorted.map(([key, value, articles]) => [key, Math.pow((value / highest),1.25) * sizeCategories + 0.7, articles]);
 
-    
     function makeWordCloud(words: Word[]): Word[] {
         const firstElem = wordList[0];
         let firstWord = h.makeWord(firstElem[0], firstElem[1], firstElem[2]);
@@ -54,6 +53,8 @@ export default function WordCloud({ clusters, setArticles }: {
             h.setSizes(size, adjustCellSize);
             dh.setSizes(adjustCellSize, h.gridSize);
             firstWord = h.makeWord(firstElem[0], firstElem[1], firstElem[2]);
+
+            setCellSize(adjustCellSize);
         }
 
         firstWord.selected = true;
@@ -168,7 +169,7 @@ export default function WordCloud({ clusters, setArticles }: {
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas || size.x === 0) return;
-
+        
         if (debug) {
             canvas.width = h.elementSize.x;
             canvas.height = h.elementSize.y;

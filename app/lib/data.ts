@@ -3,7 +3,7 @@ import { article } from "./types";
 
 
 const placeHolders = process.env.NEXT_PUBLIC_PLACEHOLDERWORDS === 'true';
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+const API_BASE = process.env.BACKEND_INTERNAL_URL ?? "http://localhost:8000";
 
 export async function readPlaceholder(path: string): Promise <string>
 {

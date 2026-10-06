@@ -3,6 +3,7 @@ import { article } from "./types";
 
 
 const placeHolders = process.env.NEXT_PUBLIC_PLACEHOLDERWORDS === 'true';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export async function readPlaceholder(path: string): Promise <string>
 {
@@ -36,17 +37,13 @@ export async function getData(): Promise<Array<[string, number, Array<article>]>
     else{
         try{
             console.log("Awaiting data fetch")
-            const res = await fetch("http://localhost:8000/api/headlines")
+            const res = await fetch(`${API_BASE}/api/headlines`)
             const data: [[...article[], [number, [string, number]]]] = await res.json()
             
             for(const h of data){
                 const pair = (h as [...article[], [number, [string, number]]]).at(-1) as [number, [string, number]]
                 const articles: article[] = []
 
-<<<<<<< HEAD
-        }catch (error){
-            console.log(error)
-=======
                 for (const a of h.slice(0, -1)){
                     const art = a as article;
                     if(art.imageUrl === "" || !art.imageUrl){
@@ -59,7 +56,6 @@ export async function getData(): Promise<Array<[string, number, Array<article>]>
                 result.push([pair[1][0], pair[0], articles])
             }
         }catch{
->>>>>>> working-branch
             throw new Error("Data fetch failed.")
         }
     }

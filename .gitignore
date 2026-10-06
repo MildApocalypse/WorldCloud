@@ -50,3 +50,7 @@ app/backend/venv/
 dockerfile
 docker-compose.yml
 *.dockerignore
+
+#python
+__pycache__/
+*.pyc

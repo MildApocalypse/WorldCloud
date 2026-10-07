@@ -54,25 +54,19 @@ export class Helpers {
         //collision is checked by testing each cell occupied by the sides of the word. if 'alternate' is true,
         //we test the side equal and opposite the direction, e.g. up and down. if false, check the other two sides.
         let pushVector = new Vec2(0, 0); //the final vector that the word is moved by
+        let cols: SideTests = {tests: new Set<Word>}
         if (alternate) {
-            const cols = this.checkCollision(word, cardinal);
-            for (const entry of cols.tests) {
-                const overlap = this.findOverlap(word, entry, direction)
-                if (overlap) {
-                    const newVector = this.calculateMove(overlap, direction)
-                    //we will get some different results if the word is overlapping multiple boxes. we use the biggest one
-                    pushVector = pushVector.length() > newVector.length() ? pushVector : newVector;
-                }
-            }
+            cols = this.checkCollision(word, cardinal);
         }
         else {
-            const cols = this.checkCollision(word, (cardinal + 2) % 4);
-            for (const entry of cols.tests) {
-                const overlap = this.findOverlap(word, entry, direction);
-                if (overlap) {
-                    const newVector = this.calculateMove(overlap, direction);
-                    pushVector = pushVector.length() > newVector.length() ? pushVector : newVector;
-                }
+            cols = this.checkCollision(word, (cardinal + 2) % 4);
+        }
+        for (const entry of cols.tests) {
+            const overlap = this.findOverlap(word, entry, direction)
+            if (overlap) {
+                const newVector = this.calculateMove(overlap, direction)
+                //we will get some different results if the word is overlapping multiple boxes. we use the biggest one
+                pushVector = pushVector.length() > newVector.length() ? pushVector : newVector;
             }
         }
         if (pushVector.isEqualTo(new Vec2(0, 0))) {
@@ -154,13 +148,16 @@ export class Helpers {
      * @param value the frequency of the word that will derive its size
      * @returns the created word
      */
-    makeWord(content: string, value: number, articles: article[]): Word {
+    makeWord(content: string, value: number, articles: article[], selected?: boolean, current?: boolean): Word {
         const fontSize = (value * this.cellSize);
         const wordSize = this.measureWord(content, fontSize.toString() + 'px Arial')
         const cells = new Vec2(Math.ceil(wordSize.x / this.cellSize), Math.ceil(wordSize.y / this.cellSize))
         const center = new Vec2(Math.floor(this.gridSize.x / 2) - this.gridSize.x % 2, Math.floor(this.gridSize.y / 2) - this.gridSize.y % 2)
 
         const word: Word = new Word(content, articles, wordSize, cells, value, center);
+        word.selected = selected ?? false;
+        word.current = current ?? false;
+
         return word;
     }
 
@@ -198,6 +195,7 @@ export class Helpers {
     }
 
     fitWord(word: Word): Word | null {
+        word.move(new Vec2(Math.floor(this.gridSize.x / 2) - this.gridSize.x % 2, Math.floor(this.gridSize.y / 2) - this.gridSize.y % 2))
         let resizedWord = word;
         while(resizedWord.cellSize.x > this.gridSize.x){
             if(resizedWord.frequencyCategory <= 1){

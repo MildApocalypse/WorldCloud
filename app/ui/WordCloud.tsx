@@ -9,6 +9,7 @@ import { article } from '../lib/types';
 import clsx from "clsx";
 
 const sizeCategories = 7;   //the divisions of size for each word
+const initialCellSize = 11; //the pixel size of each cell in the grid
 
 const debug = process.env.NEXT_PUBLIC_DEBUG === 'true';
 const stepDebug = process.env.NEXT_PUBLIC_STEPDEBUG === 'true';
@@ -33,7 +34,7 @@ export default function WordCloud({ clusters, setArticles }: {
 
     const [addedWords, updateAddedWords] = useState<Word[]>([]);
     const [size, setSize] = useState(new Vec2(0, 0));
-    const [cellSize, setCellSize] = useState(11) //the pixel size of each cell in the grid
+    const [cellSize, setCellSize] = useState(initialCellSize) 
 
     const h = new Helpers();
     h.setSizes(size, cellSize);
@@ -73,7 +74,7 @@ export default function WordCloud({ clusters, setArticles }: {
         if (!stepDebug) {
             let angle = 0;
             words.slice(1).forEach((w) => {
-                const word = h.fitWord(w);
+                const word = h.makeWord(w.content, w.frequencyCategory, w.articles, w.selected, w.current)
                 if (!word) { console.log("could not fit word: %s", w.content); return }
 
                 const startpos = new Vec2(word.location.x, word.location.y);
@@ -139,6 +140,7 @@ export default function WordCloud({ clusters, setArticles }: {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 console.log('res')
+                setCellSize(initialCellSize)
                 setSize(new Vec2(canvas.offsetWidth, canvas.offsetHeight));
             }, 100);
         });

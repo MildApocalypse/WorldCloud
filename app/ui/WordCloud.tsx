@@ -75,6 +75,7 @@ export default function WordCloud({ clusters, setArticles }: {
             let angle = 0;
             words.slice(1).forEach((w) => {
                 const word = h.makeWord(w.content, w.frequencyCategory, w.articles, w.selected, w.current)
+                if (word.current){wordRef.current = word}
                 if (!word) { console.log("could not fit word: %s", w.content); return }
 
                 const startpos = new Vec2(word.location.x, word.location.y);

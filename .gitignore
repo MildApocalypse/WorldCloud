@@ -54,3 +54,6 @@ docker-compose.yml
 #python
 __pycache__/
 *.pyc
+
+#testing
+printouts/

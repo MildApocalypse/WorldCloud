@@ -55,7 +55,8 @@ export async function getData(): Promise<Array<[string, number, Array<article>]>
                 freq.set(pair[1][0], pair[0])
                 result.push([pair[1][0], pair[0], articles])
             }
-        }catch{
+        }catch(e){
+            console.error(e)
             throw new Error("Data fetch failed.")
         }
     }

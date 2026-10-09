@@ -1,3 +1,5 @@
+import { connection } from "next/server";
+
 import { readFile } from "fs/promises";
 import { article } from "./types";
 
@@ -23,6 +25,7 @@ export function processText(text: string): string[]
 }
 
 export async function getData(): Promise<Array<[string, number, Array<article>]>> {
+    await connection();
     const freq: Map<string, number> | null = new Map<string, number>();
     let result: [string, number, article[]][] = [];
 

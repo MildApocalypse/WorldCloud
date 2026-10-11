@@ -59,6 +59,7 @@ export default function WordCloud({ clusters, setArticles }: {
         }
 
         firstWord.selected = true;
+        firstWord.added = true;
         if(!wordRef.current){
             firstWord.current = true;
             wordRef.current = firstWord;
@@ -82,13 +83,14 @@ export default function WordCloud({ clusters, setArticles }: {
                 let attemptAngle = angle
 
                 while (attemptAngle - angle < 2 * Math.PI) {
-                    if (addWord(word, attemptAngle, h)) {
-                        wordPool.push(word);
+                    word.added = addWord(word, attemptAngle, h)
+                    if (word.added) {
                         break;
                     }
                     attemptAngle = incrementAngle(attemptAngle)
                     word.move(startpos);
                 }
+                wordPool.push(word);
                 angle = incrementAngle(angle);
             });
         }
@@ -114,7 +116,8 @@ export default function WordCloud({ clusters, setArticles }: {
         }
         const canvas = canvasRef.current
         if (!canvas) return;
-        if (addWord(word, angleRef.current, h, dh, canvas)) {
+        word.added = addWord(word, angleRef.current, h, dh, canvas)
+        if (word.added) {
             dh.fillGrid(word, gridRef.current)
             indexRef.current += 1;
             updateAddedWords(prev => [...prev, word]);
@@ -217,26 +220,28 @@ function WordCloudHTML({ words, width, height, h, handleClick }: {
     }
     return (<>
         {words.map((word) => {
-            const position = convert(word);
-            return (
+            if(word.added){
+                const position = convert(word);
+                return (
 
-                <button 
-                    onClick={() => handleClick(word)}
-                    key={word.content} 
-                    style={{
-                        position: 'absolute', left: position.x, top: height - position.y,
-                        font: (word.frequencyCategory * h.cellSize).toString() + 'px Arial'
-                    }}
-                    className={clsx(
-                        'hover:underline',
-                        word.selected && 'opacity-50',
-                        word.current && 'opacity-100 underline'
-                    )}>
+                    <button 
+                        onClick={() => handleClick(word)}
+                        key={word.content} 
+                        style={{
+                            position: 'absolute', left: position.x, top: height - position.y,
+                            font: (word.frequencyCategory * h.cellSize).toString() + 'px Arial'
+                        }}
+                        className={clsx(
+                            'hover:underline',
+                            word.selected && 'opacity-50',
+                            word.current && 'opacity-100 underline'
+                        )}>
 
-                    {word.content}
+                        {word.content}
 
-                </button>
-            )
+                    </button>
+                )
+            }
         })}
     </>)
 }

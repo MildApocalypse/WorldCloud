@@ -12,6 +12,7 @@ export class Word{
     ySpan: [number, number] //0 - bottom, 1 - top
     selected: boolean
     current: boolean
+    added: boolean
 
     constructor(content: string, articles: article[], size: Vec2, cellSize: Vec2, freq: number, loc: Vec2 ){
         this.content = content;
@@ -24,6 +25,7 @@ export class Word{
         this.ySpan = getRange(this.location.y, this.cellSize.y);
         this.selected = false;
         this.current = false;
+        this.added = false;
     }
 
     move(vector: Vec2){

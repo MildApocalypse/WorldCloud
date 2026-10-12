@@ -10,13 +10,14 @@ export default function LinksPanel({ articles, tabOpen}: {articles: article[], t
                 let favicon = null;
                 if(domainString) favicon = getFaviconUrl(domainString);
                 return(
-                    <div key={a.title} className="py-5">
+                    <div key={a.title} className="py-1 
+                    max-md:max-w-[85vw] max-md:shrink-0 max-md:min-w-75 
+                    md:py-5">
                         <div className="block">
                             <a 
                                 href={a.url} 
                                 target={tabOpen? "_blank" : undefined} rel={tabOpen? "noopener noreferrer" : undefined} 
-                                className="hover:underline"
-                                style={{font: '18px Arial'}}>
+                                className="hover:underline font-[Arial] text-[14px] md:text-[18px]">
                                 
                                 {a.imageUrl && <img 
                                     src={a.imageUrl} 
@@ -25,7 +26,7 @@ export default function LinksPanel({ articles, tabOpen}: {articles: article[], t
                                         img.onerror = null
                                         img.src = "/images/no-thumb.png"}} 
                                     alt="" 
-                                    className="float-left w-24 mr-3" 
+                                    className="float-left mr-3 w-18 md:w-24" 
                                     loading="lazy">
                                 </img>}
                                 {a.title}

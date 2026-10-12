@@ -4,7 +4,7 @@ import MainUI from "./mainUI";
 export default async function AsyncUI() {
     const clusters = await getData();    
     return (
-        <div className="flex h-full">
+        <div className="flex h-full max-md:flex-col">
             <MainUI clusters={clusters}/>
         </div>
     );

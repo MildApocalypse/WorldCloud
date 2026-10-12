@@ -14,17 +14,23 @@ export default function MainUI({clusters}: {clusters: [string, number, article[]
 
     return (
         <>
-            <div className="h-full px-5 w-4/5 flex flex-col">
-                <h1 className={`${SS4.className} text-[100px] opacity-50`}>World Cloud</h1>
-                <div className="relative flex-1 min-h-0 overflow-hidden">
+            <div className="px-5 flex flex-col w-full
+            max-md:flex-1 max-md:min-h-0
+            md:h-full md:w-4/5">
+                <h1 className={`${SS4.className} text-[50px] opacity-50 md:text-[100px] `}>World Cloud</h1>
+                <div className="relative min-h-0 flex-1">
                     <WordCloud clusters={clusters} setArticles={setArticles}/>
                 </div>
             </div>
-            <div className="py-3 w-1/5 flex flex-col border-l-2 border-l-blue-200/50">
-                <div className="pb-3 border-b-2 border-b-blue-200/50 flex items-center gap-3">
+            <div className="py-1 flex flex-col
+            max-md:border-t-2 max-md:border-t-blue-200/50 
+            md:h-full md:w-1/5 md:border-l-2 md:border-l-blue-200/50 md:py-3">
+                <div className="pb-1 border-b-2 border-b-blue-200/50 flex items-center gap-3 md:pb-3">
                     <Toggle checked={on} onChange={setOn}/>
                 </div>
-                <div className="px-5 h-screen overflow-y-auto">
+                <div className="px-5 w-full flex 
+                max-md:overflow-x-auto 
+                md:flex-col md:h-screen md:overflow-y-auto">
                     <LinksPanel articles={articles} tabOpen={on}/>
                 </div>
             </div>

@@ -46,24 +46,23 @@ export default function WordCloud({ clusters, setArticles }: {
     const wordList: [string, number, article[]][] = sorted.map(([key, value, articles]) => [key, Math.pow((value / highest),1.25) * sizeCategories + 0.7, articles]);
 
     function makeWordCloud(words: Word[]): Word[] {
-        const firstElem = wordList[0];
-        let firstWord = h.makeWord(firstElem[0], firstElem[1], firstElem[2]);
+        const firstElem = words[0];
+        let firstWord = h.makeWord(firstElem.content, firstElem.frequencyCategory, firstElem.articles);
 
         if (firstWord.cellSize.x > h.gridSize.x) {
             const adjustCellSize = Math.floor(size.x / firstWord.cellSize.x) - 1
             h.setSizes(size, adjustCellSize);
             dh.setSizes(adjustCellSize, h.gridSize);
-            firstWord = h.makeWord(firstElem[0], firstElem[1], firstElem[2]);
+            firstWord = h.makeWord(firstElem.content, firstElem.frequencyCategory, firstElem.articles);
 
             setCellSize(adjustCellSize);
         }
 
         firstWord.selected = true;
         firstWord.added = true;
-        if(!wordRef.current){
-            firstWord.current = true;
+        if(firstElem.current){    
+            firstWord.current = firstElem.current;
             wordRef.current = firstWord;
-            setArticles(firstWord.articles)
         }
 
         const wordPool: Word[] = [];
@@ -163,6 +162,8 @@ export default function WordCloud({ clusters, setArticles }: {
             wordList.forEach(([content, value, articles]) => {
                 words.push(h.makeWord(content, value, articles));
             });
+            words[0].current = true;
+            setArticles(words[0].articles)
         }
         else{
             words = addedWordsRef.current

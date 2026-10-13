@@ -9,7 +9,7 @@ import { article } from '../lib/types';
 import clsx from "clsx";
 
 const sizeCategories = 7;   //the divisions of size for each word
-const initialCellSize = 11; //the pixel size of each cell in the grid
+const initialCellSize = 8; //the pixel size of each cell in the grid
 const minSize = 500; //screen size before trying to shrink any further
 
 const debug = process.env.NEXT_PUBLIC_DEBUG === 'true';
@@ -74,6 +74,7 @@ export default function WordCloud({ clusters, setArticles }: {
         
         if (!stepDebug) {
             let angle = 0;
+            let alternate = false;
             words.slice(1).forEach((w) => {
                 const word = h.makeWord(w.content, w.frequencyCategory, w.articles, w.selected, w.current)
                 if (word.current){wordRef.current = word}
@@ -83,7 +84,7 @@ export default function WordCloud({ clusters, setArticles }: {
                 let attemptAngle = angle
 
                 while (attemptAngle - angle < 2 * Math.PI) {
-                    word.added = addWord(word, attemptAngle, h)
+                    word.added = addWord(word, alternate? attemptAngle : attemptAngle+Math.PI, h)
                     if (word.added) {
                         break;
                     }
@@ -92,6 +93,7 @@ export default function WordCloud({ clusters, setArticles }: {
                 }
                 wordPool.push(word);
                 angle = incrementAngle(angle);
+                alternate = !alternate;
             });
         }
         return wordPool;

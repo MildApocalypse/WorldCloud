@@ -15,7 +15,7 @@ export function getRange(center: number, length: number): [number, number]{
 /**
  * adds a random amount to the angle, smaller amounts when the angle is more horizontal
  * @param angle angle to add to
- * @returns new angle
+ * @returns new angle (radians)
  */
 export function incrementAngle(angle: number): number{
     return angle + toRadians(10 + 30*(Math.abs(Math.sin(angle))));

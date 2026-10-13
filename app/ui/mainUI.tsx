@@ -18,7 +18,7 @@ export default function MainUI({clusters}: {clusters: [string, number, article[]
             max-md:flex-1 max-md:min-h-0
             md:h-full md:w-4/5">
                 <h1 className={`${SS4.className} text-[50px] opacity-50 md:text-[100px] `}>World Cloud</h1>
-                <div className="relative min-h-0 flex-1">
+                <div className="relative min-h-0 flex-1 overflow-hidden">
                     <WordCloud clusters={clusters} setArticles={setArticles}/>
                 </div>
             </div>

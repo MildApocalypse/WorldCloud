@@ -10,6 +10,7 @@ import clsx from "clsx";
 
 const sizeCategories = 7;   //the divisions of size for each word
 const initialCellSize = 11; //the pixel size of each cell in the grid
+const minSize = 500; //screen size before trying to shrink any further
 
 const debug = process.env.NEXT_PUBLIC_DEBUG === 'true';
 const stepDebug = process.env.NEXT_PUBLIC_STEPDEBUG === 'true';
@@ -144,7 +145,7 @@ export default function WordCloud({ clusters, setArticles }: {
             resizeTimer = setTimeout(() => {
                 console.log('res')
                 setCellSize(initialCellSize)
-                setSize(new Vec2(canvas.offsetWidth, canvas.offsetHeight));
+                setSize(new Vec2(Math.max(canvas.offsetWidth, minSize), Math.max(canvas.offsetHeight, minSize)));
             }, 100);
         });
         observer.observe(canvas);
@@ -233,7 +234,7 @@ function WordCloudHTML({ words, width, height, h, handleClick }: {
                             font: (word.frequencyCategory * h.cellSize).toString() + 'px Arial'
                         }}
                         className={clsx(
-                            'hover:underline',
+                            'hover:underline overflow-hidden text-nowrap',
                             word.selected && 'opacity-50',
                             word.current && 'opacity-100 underline'
                         )}>

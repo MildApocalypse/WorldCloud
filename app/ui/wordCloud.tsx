@@ -8,9 +8,9 @@ import { DebugHelpers } from '@/app/lib/classes/debugHelpers';
 import { article } from '../lib/types';
 import clsx from "clsx";
 
-const sizeCategories = 7;   //the divisions of size for each word
+const maxSizeCategories = 11;   //the divisions of size for each word
 const initialCellSize = 8; //the pixel size of each cell in the grid
-const minSize = 500; //screen size before trying to shrink any further
+const minSize = 400; //screen size before trying to shrink any further
 
 const debug = process.env.NEXT_PUBLIC_DEBUG === 'true';
 const stepDebug = process.env.NEXT_PUBLIC_STEPDEBUG === 'true';
@@ -44,6 +44,7 @@ export default function WordCloud({ clusters, setArticles }: {
 
     const sorted = clusters.sort((a, b) => (b[1] - a[1]));
     const highest = sorted[0][1];
+    const sizeCategories = Math.min(highest+1, maxSizeCategories)
     const wordList: [string, number, article[]][] = sorted.map(([key, value, articles]) => [key, Math.pow((value / highest),1.25) * sizeCategories + 0.7, articles]);
 
     function makeWordCloud(words: Word[]): Word[] {

@@ -60,27 +60,40 @@ export default function WordCloud({ clusters, setArticles }: {
             setCellSize(adjustCellSize);
         }
 
+        let wordPool: Word[] = [];
+        wordPool.push(firstWord);
+        
+        words.slice(1).forEach((w) => {
+            const word = h.makeWord(w.content, w.frequencyCategory, w.articles, w.selected, w.current)
+            if (word.current){wordRef.current = word}
+            if (!word) { console.log("could not fit word: %s", w.content); return }
+            wordPool.push(word)
+        })
+        
+        let attempts = 0;
+        while(attempts<50){
+            attempts++
+            const resize = squeeze(wordPool, h)
+            if(resize[0]) break;
+            wordPool = resize[1];
+        }
+
+        firstWord = wordPool[0]
+
+        h.fillGrid(firstWord);
+        gridRef.current = h.grid
+
         firstWord.selected = true;
         firstWord.added = true;
         if(firstElem.current){    
             firstWord.current = firstElem.current;
             wordRef.current = firstWord;
         }
-
-        const wordPool: Word[] = [];
-        wordPool.push(firstWord);
-
-        h.fillGrid(firstWord);
-        gridRef.current = h.grid
         
         if (!stepDebug) {
             let angle = 0;
             let alternate = false;
-            words.slice(1).forEach((w) => {
-                const word = h.makeWord(w.content, w.frequencyCategory, w.articles, w.selected, w.current)
-                if (word.current){wordRef.current = word}
-                if (!word) { console.log("could not fit word: %s", w.content); return }
-
+            wordPool.slice(1).forEach((word) => {
                 const startpos = new Vec2(word.location.x, word.location.y);
                 let attemptAngle = angle
 
@@ -92,7 +105,6 @@ export default function WordCloud({ clusters, setArticles }: {
                     attemptAngle = incrementAngle(attemptAngle)
                     word.move(startpos);
                 }
-                wordPool.push(word);
                 angle = incrementAngle(angle);
                 alternate = !alternate;
             });
@@ -281,4 +293,36 @@ function addWord(word: Word, angle: number, h: Helpers, dh?: DebugHelpers, canva
 
     }
     return false
+}
+
+function squeeze(words: Word[], h: Helpers): [boolean, Word[]] {
+    const min = 0.5;
+    const max = 0.7;
+    const minLimit = 0.2;
+    const maxLimit = 3;
+
+    const highest = words[0].frequencyCategory;
+    const lowest = words[words.length-1].frequencyCategory;
+    
+    let area = 0;
+    const gridArea = h.gridSize.x * h.gridSize.y;
+    words.forEach(word => {
+        area += (word.cellSize.x * word.cellSize.y)
+    })
+    
+    const r = area/gridArea
+    console.log("word area: %d, grid area: %d, ratio: %d", area, gridArea, r)
+    if (r>=min && r<=max || r<=minLimit || r>=maxLimit){ return [true, words]; }
+    
+    const c = r-0.7 < 0? r-0.5 : r-0.7;
+
+    const adjustedWords: Word[] = [];
+    words.forEach((word)=>{
+        let scale = (word.frequencyCategory-lowest)/(highest-lowest); 
+        if(Math.sign(c) < 0){ scale = 1 - scale; }  
+        const adjustedValue = (1-c*scale)*word.frequencyCategory;
+        const w = h.makeWord(word.content, adjustedValue, word.articles, word.selected, word.current);
+        adjustedWords.push(w)
+    })
+    return [false, adjustedWords];
 }

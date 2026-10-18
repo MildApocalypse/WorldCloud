@@ -311,7 +311,6 @@ function squeeze(words: Word[], h: Helpers): [boolean, Word[]] {
     })
     
     const r = area/gridArea
-    console.log("word area: %d, grid area: %d, ratio: %d", area, gridArea, r)
     if (r>=min && r<=max || r<=minLimit || r>=maxLimit){ return [true, words]; }
     
     const c = r-0.7 < 0? r-0.5 : r-0.7;

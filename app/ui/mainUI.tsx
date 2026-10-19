@@ -30,7 +30,7 @@ export default function MainUI({clusters}: {clusters: [string, number, article[]
                 </div>
                 <div className="px-5 w-full flex 
                 max-md:overflow-x-auto 
-                md:flex-col md:h-screen md:overflow-y-auto">
+                md:flex-col md:flex-1 md:overflow-y-auto">
                     <LinksPanel articles={articles} tabOpen={on}/>
                 </div>
             </div>

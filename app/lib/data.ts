@@ -40,6 +40,7 @@ export async function getData(): Promise<Array<[string, number, Array<article>]>
     else{
         try{
             console.log("Awaiting data fetch")
+            //use /api/printouttests/{printoutname} for test cases
             const res = await fetch(`${API_BASE}/api/headlines`)
             const data: [[...article[], [number, [string, number]]]] = await res.json()
             

@@ -207,11 +207,11 @@ export default function WordCloud({ clusters, setArticles }: {
         <>
             <canvas
                 ref={canvasRef}
-                className='h-full w-full'
+                className='min-h-0 flex-1 w-full'
             />
             <WordCloudHTML words={addedWords} width={h.elementSize.x} height={h.elementSize.y} h={h} handleClick={handleWordClick} />
             {stepDebug && <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200"
+                className="h-10 w-30 shrink-0 px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200"
                 onClick={addOne}>
                 Add Word</button>}
         </>
@@ -296,32 +296,32 @@ function addWord(word: Word, angle: number, h: Helpers, dh?: DebugHelpers, canva
 }
 
 function squeeze(words: Word[], h: Helpers): [boolean, Word[]] {
-    const min = 0.5;
-    const max = 0.7;
+    const min = 0.45;
+    const max = 0.6;
     const minLimit = 0.2;
     const maxLimit = 3;
 
     const highest = words[0].frequencyCategory;
     const lowest = words[words.length-1].frequencyCategory;
     
-    let area = 0;
+    const area = words.reduce((a, word) => a + (word.cellSize.x * word.cellSize.y), 0);
     const gridArea = h.gridSize.x * h.gridSize.y;
-    words.forEach(word => {
-        area += (word.cellSize.x * word.cellSize.y)
-    })
     
-    const r = area/gridArea
-    if (r>=min && r<=max || r<=minLimit || r>=maxLimit){ return [true, words]; }
-    
-    const c = r-0.7 < 0? r-0.5 : r-0.7;
+    const r = area/gridArea //percentage of canvas area covered by current word list
 
-    const adjustedWords: Word[] = [];
-    words.forEach((word)=>{
-        let scale = (word.frequencyCategory-lowest)/(highest-lowest); 
-        if(Math.sign(c) < 0){ scale = 1 - scale; }  
-        const adjustedValue = (1-c*scale)*word.frequencyCategory;
-        const w = h.makeWord(word.content, adjustedValue, word.articles, word.selected, word.current);
-        adjustedWords.push(w)
+    console.log("area: %d, grid area: %d, ratio: %d", area, gridArea, r)
+
+    //want to be roughly between 50% and 70%, but give up if too big or small
+    if (r>=min && r<=max || r<=minLimit || r>=maxLimit){ return [true, words]; } 
+    
+    const dir = r<min; //1 = bring up smaller words, 0 = bring down
+
+    const adjustedWords = words.map((word)=>{
+        const range  = highest - lowest;
+        const position = word.frequencyCategory-lowest;
+        const adjustedValue  = (dir? position +  (range - position) * 0.05 : position * 0.95) + lowest;
+        return h.makeWord(word.content, adjustedValue, word.articles, word.selected, word.current);
     })
+
     return [false, adjustedWords];
 }

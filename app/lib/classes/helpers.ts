@@ -90,6 +90,15 @@ export class Helpers {
         const p3 = new Vec2(word.xSpan[0], word.ySpan[0])
         const p4 = new Vec2(word.xSpan[1], word.ySpan[0])
 
+        if(!this.checkBounds(word)){
+            console.log ("word (%s) out of bounds: gridsize %d, wordsize: %d, wordl: %d, wordr: %d",
+                word.content,
+                this.gridSize.x,
+                word.cellSize.x,
+                word.xSpan[0],
+                word.xSpan[1]
+            )}
+
         let side1: Set<Word>;
         let side2: Set<Word>;
         if (cardinal < Direction.LEFT) {
@@ -100,7 +109,6 @@ export class Helpers {
             side1 = this.testGrid(p1, p3);
             side2 = this.testGrid(p2, p4);
         }
-
         const collisions = side1.union(side2);
 
         return { tests: collisions }
@@ -144,8 +152,11 @@ export class Helpers {
 
     /**
      * Calculates initial values for word constructor
-     * @param key the string content
+     * @param content the string content
      * @param value the frequency of the word that will derive its size
+     * @param articles articles in this cluster
+     * @param selected if this word has been selected previously
+     * @param current if this word is currently selected
      * @returns the created word
      */
     makeWord(content: string, value: number, articles: article[], selected?: boolean, current?: boolean): Word {
@@ -157,7 +168,6 @@ export class Helpers {
         const word: Word = new Word(content, articles, wordSize, cells, value, center);
         word.selected = selected ?? false;
         word.current = current ?? false;
-
         return word;
     }
 
@@ -199,6 +209,7 @@ export class Helpers {
         let resizedWord = word;
         while(resizedWord.cellSize.x > this.gridSize.x){
             if(resizedWord.frequencyCategory <= 1){
+                console.log("%s could not fit, word size: %d, grid size: %d", word.content, word.cellSize.x, this.gridSize.x)
                 return null
             }
             resizedWord = this.makeWord(resizedWord.content, resizedWord.frequencyCategory-1, resizedWord.articles)
@@ -214,8 +225,15 @@ export class Helpers {
      */
     testGrid(p1: Vec2, p2: Vec2): Set<Word> {
         const hits: Set<Word> = new Set<Word>();
-        const [xStart, xEnd] = p1.x < p2.x ? [p1.x, p2.x] : [p2.x, p1.x];
-        const [yStart, yEnd] = p1.y < p2.y ? [p1.y, p2.y] : [p2.y, p1.y];
+        
+        const [xStart, xEnd] = p1.x < p2.x ? 
+        [Math.max(p1.x, 0), Math.min(p2.x, this.gridSize.x)] : 
+        [Math.max(p2.x, 0), Math.min(p1.x, this.gridSize.x)];
+        
+        const [yStart, yEnd] = p1.y < p2.y ? 
+        [Math.max(p1.y, 0), Math.min(p2.y, this.gridSize.y)] : 
+        [Math.max(p2.y, 0), Math.min(p1.y, this.gridSize.y)];
+        
         for (let i = xStart; i <= xEnd; ++i) {
             for (let j = yStart; j <= yEnd; ++j) {
                 const index = this.grid[i][this.gridSize.y - 1 - j];

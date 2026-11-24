@@ -23,7 +23,7 @@ export default function WordCloud({ clusters, setArticles }: {
         throw new Error("No data sent to cloud builder.");
     }
 
-    console.log("render")
+    //console.log("render")
 
     //refs needed between renders for step-by-step debugging
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,14 +48,17 @@ export default function WordCloud({ clusters, setArticles }: {
     const wordList: [string, number, article[]][] = sorted.map(([key, value, articles]) => [key, Math.pow((value / highest),1.25) * sizeCategories + 0.7, articles]);
 
     function makeWordCloud(words: Word[]): Word[] {
-        const firstElem = words[0];
-        let firstWord = h.makeWord(firstElem.content, firstElem.frequencyCategory, firstElem.articles);
+        const mappedWords = words.map((word, index) => {
+            return h.makeWord(wordList[index][0], wordList[index][1], wordList[index][2], word.selected, word.current)
+        })
 
-        if (firstWord.cellSize.x > h.gridSize.x) {
+        let firstWord = mappedWords[0];
+
+        if (firstWord && firstWord.cellSize.x > h.gridSize.x) {
             const adjustCellSize = Math.floor(size.x / firstWord.cellSize.x) - 1
             h.setSizes(size, adjustCellSize);
             dh.setSizes(adjustCellSize, h.gridSize);
-            firstWord = h.makeWord(firstElem.content, firstElem.frequencyCategory, firstElem.articles);
+            firstWord = h.makeWord(firstWord.content, firstWord.frequencyCategory, firstWord.articles, firstWord.selected, firstWord.current);
 
             setCellSize(adjustCellSize);
         }
@@ -63,11 +66,13 @@ export default function WordCloud({ clusters, setArticles }: {
         let wordPool: Word[] = [];
         wordPool.push(firstWord);
         
-        words.slice(1).forEach((w) => {
-            const word = h.makeWord(w.content, w.frequencyCategory, w.articles, w.selected, w.current)
-            if (word.current){wordRef.current = word}
+        mappedWords.slice(1).forEach((w) => {
+            let word: Word | null = h.makeWord(w.content, w.frequencyCategory, w.articles, w.selected, w.current)
             if (!word) { console.log("could not fit word: %s", w.content); return }
-            wordPool.push(word)
+            if (word.current){wordRef.current = word}
+            word = h.fitWord(word);
+
+            if(word) wordPool.push(word)
         })
         
         let attempts = 0;
@@ -83,12 +88,9 @@ export default function WordCloud({ clusters, setArticles }: {
         h.fillGrid(firstWord);
         gridRef.current = h.grid
 
-        firstWord.selected = true;
         firstWord.added = true;
-        if(firstElem.current){    
-            firstWord.current = firstElem.current;
-            wordRef.current = firstWord;
-        }
+        if(firstWord.current){wordRef.current = firstWord}
+
         
         if (!stepDebug) {
             let angle = 0;
@@ -99,6 +101,7 @@ export default function WordCloud({ clusters, setArticles }: {
 
                 while (attemptAngle - angle < 2 * Math.PI) {
                     word.added = addWord(word, alternate? attemptAngle : attemptAngle+Math.PI, h)
+                    if(word.current){wordRef.current = word}
                     if (word.added) {
                         break;
                     }
@@ -179,6 +182,7 @@ export default function WordCloud({ clusters, setArticles }: {
                 words.push(h.makeWord(content, value, articles));
             });
             words[0].current = true;
+            words[0].selected = true;
             setArticles(words[0].articles)
         }
         else{
@@ -309,7 +313,7 @@ function squeeze(words: Word[], h: Helpers): [boolean, Word[]] {
     
     const r = area/gridArea //percentage of canvas area covered by current word list
 
-    console.log("area: %d, grid area: %d, ratio: %d", area, gridArea, r)
+    //console.log("area: %d, grid area: %d, ratio: %d", area, gridArea, r)
 
     //want to be roughly between 50% and 70%, but give up if too big or small
     if (r>=min && r<=max || r<=minLimit || r>=maxLimit){ return [true, words]; } 

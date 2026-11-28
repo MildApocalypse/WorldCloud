@@ -171,6 +171,15 @@ export class Helpers {
         return word;
     }
 
+    remakeWord(word: Word, content?: string, value?: number){
+        const fontSize = value? value * this.cellSize : word.frequencyCategory * this.cellSize;
+        const wordSize = content? this.measureWord(content, fontSize.toString() + 'px Arial') : this.measureWord(word.content, fontSize.toString() + 'px Arial')
+        const cells = new Vec2(Math.ceil(wordSize.x / this.cellSize), Math.ceil(wordSize.y / this.cellSize))
+        const center = new Vec2(Math.floor(this.gridSize.x / 2) - this.gridSize.x % 2, Math.floor(this.gridSize.y / 2) - this.gridSize.y % 2)
+        
+        word.remake(content, wordSize, cells, value, center)
+    }
+
     /**
      * find the screen pixel size of a word's bounding box
      * @param text string content of the word
@@ -204,17 +213,16 @@ export class Helpers {
         return true;
     }
 
-    fitWord(word: Word): Word | null {
+    fitWord(word: Word): boolean {
         word.move(new Vec2(Math.floor(this.gridSize.x / 2) - this.gridSize.x % 2, Math.floor(this.gridSize.y / 2) - this.gridSize.y % 2))
-        let resizedWord = word;
-        while(resizedWord.cellSize.x > this.gridSize.x){
-            if(resizedWord.frequencyCategory <= 1){
+        while(word.cellSize.x > this.gridSize.x){
+            if(word.frequencyCategory <= 1){
                 console.log("%s could not fit, word size: %d, grid size: %d", word.content, word.cellSize.x, this.gridSize.x)
-                return null
+                return false;
             }
-            resizedWord = this.makeWord(resizedWord.content, resizedWord.frequencyCategory-1, resizedWord.articles)
+            this.remakeWord(word, undefined, word.frequencyCategory-1)
         }
-        return resizedWord
+        return true;
     }
 
     /**

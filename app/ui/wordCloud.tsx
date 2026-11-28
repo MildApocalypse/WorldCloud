@@ -48,17 +48,18 @@ export default function WordCloud({ clusters, setArticles }: {
     const wordList: [string, number, article[]][] = sorted.map(([key, value, articles]) => [key, Math.pow((value / highest),1.25) * sizeCategories + 0.7, articles]);
 
     function makeWordCloud(words: Word[]): Word[] {
-        const mappedWords = words.map((word, index) => {
+        //need to form words before grid size is adjusted
+        const preProcessedWords = words.map((word, index) => {
             return h.makeWord(wordList[index][0], wordList[index][1], wordList[index][2], word.selected, word.current)
         })
 
-        let firstWord = mappedWords[0];
+        let firstWord = preProcessedWords[0];
 
         if (firstWord && firstWord.cellSize.x > h.gridSize.x) {
             const adjustCellSize = Math.floor(size.x / firstWord.cellSize.x) - 1
             h.setSizes(size, adjustCellSize);
             dh.setSizes(adjustCellSize, h.gridSize);
-            firstWord = h.makeWord(firstWord.content, firstWord.frequencyCategory, firstWord.articles, firstWord.selected, firstWord.current);
+            h.remakeWord(firstWord);
 
             setCellSize(adjustCellSize);
         }
@@ -66,13 +67,12 @@ export default function WordCloud({ clusters, setArticles }: {
         let wordPool: Word[] = [];
         wordPool.push(firstWord);
         
-        mappedWords.slice(1).forEach((w) => {
-            let word: Word | null = h.makeWord(w.content, w.frequencyCategory, w.articles, w.selected, w.current)
-            if (!word) { console.log("could not fit word: %s", w.content); return }
+        preProcessedWords.slice(1).forEach((word) => {
+            h.remakeWord(word)
             if (word.current){wordRef.current = word}
-            word = h.fitWord(word);
+            const fitted = h.fitWord(word);
 
-            if(word) wordPool.push(word)
+            if(fitted) wordPool.push(word)
         })
         
         let attempts = 0;
@@ -320,12 +320,12 @@ function squeeze(words: Word[], h: Helpers): [boolean, Word[]] {
     
     const dir = r<min; //1 = bring up smaller words, 0 = bring down
 
-    const adjustedWords = words.map((word)=>{
+    words.forEach((word)=>{
         const range  = highest - lowest;
         const position = word.frequencyCategory-lowest;
         const adjustedValue  = (dir? position +  (range - position) * 0.05 : position * 0.95) + lowest;
-        return h.makeWord(word.content, adjustedValue, word.articles, word.selected, word.current);
+        h.remakeWord(word, undefined, adjustedValue)
     })
 
-    return [false, adjustedWords];
+    return [false, words];
 }

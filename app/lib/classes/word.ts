@@ -28,6 +28,14 @@ export class Word{
         this.added = false;
     }
 
+    remake(content?:string, size?: Vec2, cellSize?: Vec2, freq?: number, loc?: Vec2){
+        if(content) this.content = content;
+        if(size) this.size = size;
+        if(cellSize) this.cellSize = cellSize;
+        if(freq) this.frequencyCategory = freq;
+        if(loc){this.move(loc)}
+    }
+
     move(vector: Vec2){
         this.location = vector;
         this.xSpan = getRange(this.location.x, this.cellSize.x);
